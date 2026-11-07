@@ -1,0 +1,1842 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14213a">
+<meta name="description" content="קארום לטלפון: ממקמים את הסטרייקר ומעיפים אותו באצבע. נגד המחשב, על טלפון אחד או אונליין עם חברים.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+html{box-sizing:border-box;height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<script>window.CARROM_VERSION = "1794084664919";</script>
+<title>קארום</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Suez+One&display=swap">
+<style>
+/* Layout: one-screen game table: score strip on top, the square board fills the rest, a one-line coach under it; menus rise as a sheet over the board */
+:root{
+  --night:#14213a; --indigo:#1e3158; --indigo-2:#2a416f; --ivory:#f5ecd9; --ivory-dim:#b9b2a3;
+  --saffron:#f2a531; --vermilion:#d4462f; --line:rgba(245,236,217,.16);
+  --font-display:"Suez One","Assistant",Georgia,serif;
+  --font-body:"Assistant",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background-color:var(--night);color:var(--ivory);font-family:var(--font-body);font-size:15px;overflow:hidden;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  background-image:radial-gradient(rgba(242,165,49,.07) 1.4px,transparent 1.8px),radial-gradient(ellipse at 50% 40%,rgba(42,65,111,.55),transparent 70%);
+  background-size:22px 22px,100% 100%}
+#app{height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;max-width:760px;margin:0 auto;
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hud{display:flex;gap:8px;align-items:stretch;flex:none}
+.team{flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:14px;background:var(--indigo);
+  border:1.5px solid transparent;transition:border-color .25s,background .25s}
+.team.on{border-color:var(--saffron);background:var(--indigo-2)}
+.chip{width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 3px rgba(0,0,0,.14),0 1px 2px rgba(0,0,0,.45)}
+.chip.w{background:radial-gradient(circle at 35% 35%,#fffaf0,#dccaa6)}
+.chip.b{background:radial-gradient(circle at 35% 35%,#5a4b44,#17110f)}
+.tinfo{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.2}
+.tname{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tsub{font-size:12px;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.2em}
+.chip.n{background:radial-gradient(circle at 35% 35%,#9a968e,#57534d)}
+.tcount{font-family:var(--font-display);font-size:22px;font-variant-numeric:tabular-nums;flex:none;display:flex;align-items:baseline;gap:3px}
+.tcount small{font-family:var(--font-body);font-size:12px;color:var(--ivory-dim)}
+.wallet{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:var(--night);padding:6px 14px 6px 10px;border-radius:999px;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
+.coin{width:18px;height:18px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 35%,#ffe9a8,#e2a92c 60%,#a5711a);box-shadow:inset 0 0 0 2px rgba(120,80,10,.45)}
+.skins{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.skin{background:var(--night);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0;border:1.5px solid transparent}
+.skin.using{border-color:var(--saffron)}
+.skinprev{width:100%;max-width:100%;aspect-ratio:1;border-radius:10px;display:block}
+.skname{font-weight:800;font-size:15px}
+.skdesc{font-size:12px;color:var(--ivory-dim);line-height:1.35;flex:1}
+.btn.small{font-size:14px;padding:9px 8px;align-items:center;text-align:center}
+.btn.buy{background:var(--saffron);color:#2b1a04}
+.btn.confirm{background:var(--vermilion);color:var(--ivory)}
+.tag{font-size:14px;font-weight:800;color:var(--saffron);text-align:center;padding:9px 0}
+.result{display:flex;justify-content:center;gap:18px;font-family:var(--font-display);font-size:30px;font-variant-numeric:tabular-nums}
+.result span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.result small{font-family:var(--font-body);font-size:13px;color:var(--ivory-dim)}
+.bet{font-weight:800;text-align:center;margin:0}
+.bet.win{color:var(--saffron)} .bet.lose{color:var(--ivory-dim)}
+.qdot{width:11px;height:11px;border-radius:50%;background:var(--vermilion);flex:none;box-shadow:0 0 0 2px rgba(212,70,47,.3)}
+.qdot.pending{opacity:.45}
+.iconbtn{flex:none;width:44px;border-radius:14px;background:var(--indigo);border:0;color:var(--ivory);display:grid;place-items:center;cursor:pointer;padding:0}
+.iconbtn:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+#stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative}
+#board{display:block;touch-action:none;border-radius:20px;box-shadow:0 20px 44px rgba(0,0,0,.5)}
+#toast{position:absolute;top:12px;left:50%;transform:translate(-50%,-6px);max-width:calc(100% - 40px);box-sizing:border-box;
+  background:rgba(20,33,58,.94);border:1px solid var(--line);padding:8px 16px;border-radius:999px;font-weight:700;font-size:14px;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#placer{flex:none;align-self:center;max-width:100%;height:54px;position:relative;direction:ltr;touch-action:none;cursor:pointer;transition:opacity .2s}
+#placer.off{opacity:.35;cursor:default}
+#placer .rail{position:absolute;left:0;right:0;top:50%;height:30px;transform:translateY(-50%);border-radius:15px;
+  background:linear-gradient(#5e3119,#3d1d0d);box-shadow:inset 0 2px 4px rgba(0,0,0,.5),0 1px 0 rgba(255,220,180,.12)}
+#placer .rail::before{content:"";position:absolute;left:26px;right:26px;top:50%;height:2px;transform:translateY(-50%);background:rgba(242,165,49,.55);border-radius:1px}
+#placer .end{position:absolute;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#b3302a;box-shadow:0 0 0 2px #2b1b10}
+#placer .thumb{position:absolute;top:50%;left:0;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;will-change:transform;
+  background:radial-gradient(circle at 50% 50%,#1e3158 0 3px,transparent 3.5px),
+    radial-gradient(circle at 50% 50%,transparent 0 9px,#c43d2a 9px 11px,transparent 11.5px),
+    radial-gradient(circle at 50% 50%,transparent 0 15px,#e99b2b 15px 18px,transparent 18.5px),
+    radial-gradient(circle at 36% 32%,#ffffff,#f3ecdc 55%,#d3c39f);
+  box-shadow:0 3px 6px rgba(0,0,0,.45),0 0 0 2px rgba(143,125,90,.6)}
+#placer.bad .thumb{box-shadow:0 3px 6px rgba(0,0,0,.45),0 0 0 3px var(--vermilion)}
+#placer.drag .thumb{box-shadow:0 3px 8px rgba(0,0,0,.5),0 0 0 3px var(--saffron)}
+#placer:focus-visible{outline:2px solid var(--saffron);outline-offset:3px;border-radius:16px}
+#coach{flex:none;min-height:2.9em;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.3;gap:2px}
+#coachMain{font-weight:800;font-size:16px;color:var(--saffron)}
+#coachSub{font-size:14px;color:var(--ivory-dim)}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;box-sizing:border-box;
+  background:rgba(9,15,29,.6);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+@media (min-height:680px){.sheet{align-items:center}}
+.panel{width:100%;max-width:420px;max-height:100%;overflow-y:auto;touch-action:pan-y;box-sizing:border-box;background:var(--indigo);
+  border:1px solid var(--line);border-radius:22px;padding:22px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.panel h1{font-family:var(--font-display);font-weight:400;font-size:46px;line-height:1;margin:0;color:var(--saffron);text-wrap:balance}
+.panel h2{font-family:var(--font-display);font-weight:400;font-size:30px;line-height:1.1;margin:0;text-wrap:balance}
+.lead{margin:0 0 4px;color:var(--ivory-dim);line-height:1.45}
+.btn{font:inherit;font-weight:700;font-size:17px;padding:13px 16px;border-radius:14px;border:0;background:var(--indigo-2);color:var(--ivory);
+  cursor:pointer;text-align:start;display:flex;flex-direction:column;gap:2px;width:100%}
+.btn small{font-weight:400;font-size:13px;color:var(--ivory-dim)}
+.btn.primary{background:var(--saffron);color:#2b1a04;align-items:center;text-align:center}
+.btn.quiet{background:transparent;color:var(--ivory-dim);align-items:center;text-align:center;font-weight:600;font-size:15px;padding:10px}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+.label{font-size:12px;letter-spacing:.06em;color:var(--ivory-dim);font-weight:700;margin:4px 0 -4px}
+.seg{display:flex;background:var(--night);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;font:inherit;font-weight:700;font-size:15px;padding:10px 4px;border:0;border-radius:9px;background:transparent;color:var(--ivory-dim);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ivory);color:var(--night)}
+.acctrow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.acctrow h2{flex:1;min-width:0;overflow-wrap:anywhere}
+.acctbtn{font:inherit;font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:8px;background:var(--indigo-2);color:var(--ivory);border:0;border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer;max-width:100%}
+.acctbtn:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--saffron);color:#2b1a04;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none}
+.avatar.big{width:52px;height:52px;font-size:26px;font-family:var(--font-display)}
+.err{margin:0;color:#ff9b87;font-weight:700;font-size:14px;line-height:1.4}
+.wform{display:flex;flex-direction:column;gap:10px}
+input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--night);color:var(--ivory);width:100%;box-sizing:border-box}
+.codein{direction:ltr;text-align:center;letter-spacing:.3em;text-transform:uppercase;font-family:var(--font-display)!important;font-size:24px!important}
+.code{font-family:var(--font-display);font-size:52px;letter-spacing:.2em;direction:ltr;text-align:center;color:var(--saffron);line-height:1.1}
+.seats{display:grid;gap:8px}
+.seat{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--night);font-weight:600}
+.seat .empty{color:var(--ivory-dim);font-weight:400}
+.note{font-size:13px;color:var(--ivory-dim);margin:0;line-height:1.45}
+.divider{display:flex;align-items:center;gap:10px;color:var(--ivory-dim);font-size:13px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.rules{margin:0;padding-inline-start:20px;display:grid;gap:7px;line-height:1.45}
+.rules b{color:var(--saffron)}
+.big{font-family:var(--font-display);font-size:64px;line-height:1;text-align:center;color:var(--saffron)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div id="app" dir="rtl">
+  <header class="hud">
+    <div class="team" id="team0">
+      <span class="chip n" id="t0chip"></span>
+      <div class="tinfo"><span class="tname" id="t0name">שחקן 1</span><span class="tsub" id="t0sub"></span></div>
+      <span class="qdot" id="t0q" hidden></span>
+      <span class="tcount"><span id="t0pts">0</span><small>נק׳</small></span>
+    </div>
+    <button class="iconbtn" id="menuBtn" aria-label="תפריט">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div class="team" id="team1">
+      <span class="chip n" id="t1chip"></span>
+      <div class="tinfo"><span class="tname" id="t1name">שחקן 2</span><span class="tsub" id="t1sub"></span></div>
+      <span class="qdot" id="t1q" hidden></span>
+      <span class="tcount"><span id="t1pts">0</span><small>נק׳</small></span>
+    </div>
+  </header>
+  <main id="stage">
+    <canvas id="board" aria-label="לוח קארום"></canvas>
+    <div id="placer" class="off" role="slider" tabindex="0" aria-label="מיקום הסטרייקר על הקו" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
+      <div class="rail"></div><span class="end" style="left:19px"></span><span class="end" style="right:19px"></span><div class="thumb"></div>
+    </div>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+  <footer id="coach"><span id="coachMain"></span><span id="coachSub"></span></footer>
+</div>
+<div class="sheet" id="sheet" dir="rtl" hidden><div class="panel" id="panel"></div></div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+
+/* ---------------- board geometry (1 unit ≈ 0.74 mm of a real 74 cm board) ---------------- */
+const HALF = 500, FRAME = 62;
+const R_C = 21.5, R_S = 28, M_C = 1, M_S = 2.8;
+const POCKET = 470, POCKET_R = 31, POCKET_DRAW = 33;
+const BASE_Y = 341.5, BASE_X = 296;
+const DT = 1 / 400, FR = 850, E_BALL = 0.9, E_WALL = 0.62, STOP = 4, VMAX = 5200, POWER = 0.85;
+const POCKETS = [[POCKET, POCKET], [-POCKET, POCKET], [-POCKET, -POCKET], [POCKET, -POCKET]];
+const colorOf = i => i === 0 ? 'q' : i <= 9 ? 'w' : i <= 18 ? 'b' : 's';
+const colorOfTeam = T => T === 0 ? 'w' : 'b';
+const round2 = v => Math.round(v * 100) / 100;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const HOWTO = 'מקם במסילה שמתחת ללוח · על הלוח: החלק את הסטרייקר בתנופה';
+
+// seat-local -> world: seat 0 bottom, 1 right, 2 top, 3 left (turns go counter-clockwise)
+function rotW(x, y, s) { s = ((s % 4) + 4) % 4; for (let i = 0; i < s; i++) { const t = x; x = y; y = -t; } return [x, y]; }
+
+/* ---------------- state ---------------- */
+function initialCoins() {
+  const c = new Array(19).fill(null);
+  c[0] = [0, 0];
+  const d = 2 * R_C + 0.6;
+  let w = 1, b = 10;
+  const put = (col, x, y) => { const i = col === 'w' ? w++ : b++; c[i] = [round2(x), round2(y)]; };
+  for (let k = 0; k < 6; k++) {
+    const a = k * Math.PI / 3 + Math.PI / 6;
+    put(k % 2 ? 'b' : 'w', d * Math.cos(a), d * Math.sin(a));
+    put(k % 2 ? 'b' : 'w', 2 * d * Math.cos(a), 2 * d * Math.sin(a));
+    const a2 = a + Math.PI / 6, r2 = d * Math.sqrt(3);
+    put(k % 2 ? 'w' : 'b', r2 * Math.cos(a2), r2 * Math.sin(a2));
+  }
+  return c;
+}
+function newState(fmt) {
+  return { fmt, seats: fmt === '2v2' ? [0, 1, 2, 3] : [0, 2], coins: initialCoins(), queen: null,
+    colors: null, turn: 0, shotNo: 0, winner: null, final: null, msg: '', gid: Math.floor(Math.random() * 1e9) };
+}
+// house rules: a team's colour is whatever it pockets first; queen = +3 once covered
+const otherColor = c => c === 'w' ? 'b' : 'w';
+const colorName = c => coinSetById(W$.data.equip.coins).labels[c === 'w' ? 0 : 1];
+const teamColor = (st, T) => st.colors ? st.colors[T] : null;
+function teamPoints(st, T) {
+  const c = teamColor(st, T);
+  return (c ? pocketedOf(st.coins, c).length : 0) + (st.queen && st.queen.covered && st.queen.by === T ? 3 : 0);
+}
+const teamOf = (st, s) => st.fmt === '2v2' ? s % 2 : (s === 0 ? 0 : 1);
+const curSeat = st => st.seats[st.turn];
+function pocketedOf(coins, col) { const a = []; for (let i = 1; i < 19; i++) if (colorOf(i) === col && !coins[i]) a.push(i); return a; }
+function onBoardOf(coins, col) { const a = []; for (let i = 0; i < 19; i++) if (colorOf(i) === col && coins[i]) a.push(i); return a; }
+function overlapsAny(coins, x, y, r, skip) {
+  for (let i = 0; i < 19; i++) {
+    if (i === skip || !coins[i]) continue;
+    const dx = coins[i][0] - x, dy = coins[i][1] - y, rr = r + R_C;
+    if (dx * dx + dy * dy < rr * rr) return true;
+  }
+  return false;
+}
+function freeSpot(coins) {
+  if (!overlapsAny(coins, 0, 0, R_C + 0.3)) return [0, 0];
+  for (let r = 2 * R_C + 1; r < 260; r += R_C) {
+    const n = Math.max(6, Math.floor(2 * Math.PI * r / (2 * R_C + 1)));
+    for (let k = 0; k < n; k++) {
+      const a = k * 2 * Math.PI / n, x = round2(r * Math.cos(a)), y = round2(r * Math.sin(a));
+      if (!overlapsAny(coins, x, y, R_C + 0.3)) return [x, y];
+    }
+  }
+  return [0, 0];
+}
+function validPlace(lx, seat, coins) { const [x, y] = rotW(lx, BASE_Y, seat); return !overlapsAny(coins, x, y, R_S); }
+function startX(seat, coins) {
+  for (let d = 0; d <= BASE_X; d += 3) {
+    if (validPlace(d, seat, coins)) return d;
+    if (validPlace(-d, seat, coins)) return -d;
+  }
+  return 0;
+}
+
+/* ---------------- physics ---------------- */
+function makeBodies(coins) {
+  const B = [];
+  for (let i = 0; i < 19; i++) if (coins[i]) B.push({ i, x: coins[i][0], y: coins[i][1], vx: 0, vy: 0, r: R_C, m: M_C, out: false });
+  return B;
+}
+function step(B, ev) {
+  const n = B.length, dec = FR * DT;
+  for (let k = 0; k < n; k++) {
+    const b = B[k];
+    if (b.out || (b.vx === 0 && b.vy === 0)) continue;
+    const sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy), ns = sp - dec;
+    if (ns <= STOP) { b.vx = 0; b.vy = 0; continue; }
+    const f = ns / sp; b.vx *= f; b.vy *= f;
+    b.x += b.vx * DT; b.y += b.vy * DT;
+  }
+  for (let a = 0; a < n; a++) {
+    const A = B[a]; if (A.out) continue;
+    for (let c = a + 1; c < n; c++) {
+      const C = B[c]; if (C.out) continue;
+      if (A.vx === 0 && A.vy === 0 && C.vx === 0 && C.vy === 0) continue;
+      const dx = A.x - C.x, dy = A.y - C.y, rr = A.r + C.r, d2 = dx * dx + dy * dy;
+      if (d2 >= rr * rr || d2 < 1e-9) continue;
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, ov = rr - d, im = 1 / A.m + 1 / C.m;
+      const fa = (1 / A.m) / im, fc = (1 / C.m) / im;
+      A.x += nx * ov * fa; A.y += ny * ov * fa; C.x -= nx * ov * fc; C.y -= ny * ov * fc;
+      const rel = (A.vx - C.vx) * nx + (A.vy - C.vy) * ny;
+      if (rel < 0) {
+        const j = -(1 + E_BALL) * rel / im;
+        A.vx += j * nx / A.m; A.vy += j * ny / A.m; C.vx -= j * nx / C.m; C.vy -= j * ny / C.m;
+        if (ev.hits) ev.hits.push(-rel);
+      }
+    }
+  }
+  const PL = POCKET - POCKET_R;
+  for (let k = 0; k < n; k++) {
+    const b = B[k]; if (b.out) continue;
+    const lim = HALF - b.r;
+    if (b.x > lim) { b.x = lim; if (b.vx > 0) { if (ev.hits) ev.hits.push(b.vx * .5); b.vx = -b.vx * E_WALL; } }
+    else if (b.x < -lim) { b.x = -lim; if (b.vx < 0) { if (ev.hits) ev.hits.push(-b.vx * .5); b.vx = -b.vx * E_WALL; } }
+    if (b.y > lim) { b.y = lim; if (b.vy > 0) { if (ev.hits) ev.hits.push(b.vy * .5); b.vy = -b.vy * E_WALL; } }
+    else if (b.y < -lim) { b.y = -lim; if (b.vy < 0) { if (ev.hits) ev.hits.push(-b.vy * .5); b.vy = -b.vy * E_WALL; } }
+    if ((b.x > PL || b.x < -PL) && (b.y > PL || b.y < -PL)) {
+      for (let p = 0; p < 4; p++) {
+        const dx = b.x - POCKETS[p][0], dy = b.y - POCKETS[p][1];
+        if (dx * dx + dy * dy < POCKET_R * POCKET_R) { b.out = true; ev.pocketed.push({ i: b.i, p, x: b.x, y: b.y }); b.vx = 0; b.vy = 0; break; }
+      }
+    }
+  }
+}
+function anyMoving(B) { for (const b of B) if (!b.out && (b.vx !== 0 || b.vy !== 0)) return true; return false; }
+function simulate(coins, shot, maxT) {
+  const B = makeBodies(coins);
+  B.push({ i: 19, x: shot.x, y: shot.y, vx: shot.vx, vy: shot.vy, r: R_S, m: M_S, out: false });
+  const ev = { pocketed: [], hits: null };
+  const max = (maxT || 12) / DT;
+  for (let s = 0; s < max; s++) { step(B, ev); if (!anyMoving(B)) break; }
+  return { B, ev };
+}
+
+/* ---------------- rules ---------------- */
+function applyRules(st0, B, ev) {
+  const st = JSON.parse(JSON.stringify(st0));
+  const seat = curSeat(st), T = teamOf(st, seat);
+  const coins = new Array(19).fill(null);
+  for (const b of B) if (b.i < 19 && !b.out) coins[b.i] = [round2(b.x), round2(b.y)];
+  st.coins = coins;
+  const potCoins = []; let potQ = false, foul = false;
+  for (const p of ev.pocketed) {
+    const c = colorOf(p.i);
+    if (c === 's') foul = true; else if (c === 'q') potQ = true; else potCoins.push(p.i);
+  }
+  const msgs = []; let cont = false;
+  const toCenter = i => { if (!st.coins[i]) st.coins[i] = freeSpot(st.coins); };
+  // first clean pocket of the game decides the colours, by the first coin that dropped
+  if (!st.colors && !foul && potCoins.length) {
+    const c = colorOf(potCoins[0]);
+    st.colors = T === 0 ? [c, otherColor(c)] : [otherColor(c), c];
+    msgs.push('הצבעים נקבעו!');
+  }
+  const own = teamColor(st, T);
+  const potOwn = own ? potCoins.filter(i => colorOf(i) === own) : [];
+  if (foul) {
+    msgs.push('פאול! הסטרייקר נפל לכיס');
+    (own ? potOwn : potCoins).forEach(toCenter);
+    if (own) {
+      const prev = pocketedOf(st.coins, own);
+      if (prev.length) { toCenter(prev[prev.length - 1]); msgs.push('אסימון אחד שלך חוזר למרכז'); }
+    }
+    if (potQ) toCenter(0);
+    if (st.queen && !st.queen.covered && st.queen.by === T) { toCenter(0); st.queen = null; }
+  } else {
+    if (potQ) {
+      if (potOwn.length) { st.queen = { by: T, covered: true }; msgs.push('המלכה נכנסה וכוסתה! +3 נקודות'); }
+      else { st.queen = { by: T, covered: false }; msgs.push('המלכה בכיס! הכנס עכשיו אסימון שלך כדי לקבל 3 נקודות'); cont = true; }
+    } else if (st.queen && !st.queen.covered && st.queen.by === T) {
+      if (potOwn.length) { st.queen.covered = true; msgs.push('כיסית את המלכה! +3 נקודות'); }
+      else { toCenter(0); st.queen = null; msgs.push('לא כיסית — המלכה חוזרת למרכז'); }
+    }
+    if (potOwn.length) { cont = true; if (msgs.length < 1 || (msgs.length === 1 && msgs[0].startsWith('הצבעים'))) msgs.push(potOwn.length > 1 ? `נכנסו ${potOwn.length} — עוד תור!` : 'נכנס! עוד תור'); }
+    else if (potCoins.length && !potQ) msgs.push('הכנסת אסימון של היריב');
+  }
+  // the board ends when one colour is fully pocketed; most points wins
+  if (st.colors) {
+    const done = [0, 1].filter(t => pocketedOf(st.coins, st.colors[t]).length === 9);
+    if (done.length) {
+      if (st.queen && !st.queen.covered) { toCenter(0); st.queen = null; }
+      const p0 = teamPoints(st, 0), p1 = teamPoints(st, 1);
+      st.winner = p0 > p1 ? 0 : p1 > p0 ? 1 : done[0];
+      st.final = [p0, p1];
+    }
+  }
+  if (st.winner === null && !cont) st.turn = (st.turn + 1) % st.seats.length;
+  st.shotNo++;
+  st.msg = msgs.join(' · ');
+  return st;
+}
+
+/* ---------------- computer player ---------------- */
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function segClear(ax, ay, bx, by, r, coins, skip) {
+  const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+  for (let i = 0; i < 19; i++) {
+    if (i === skip || !coins[i]) continue;
+    const px = coins[i][0] - ax, py = coins[i][1] - ay;
+    let t = L2 ? (px * dx + py * dy) / L2 : 0; t = clamp(t, 0, 1);
+    const qx = px - dx * t, qy = py - dy * t, rr = r + R_C - 1;
+    if (qx * qx + qy * qy < rr * rr) return false;
+  }
+  return true;
+}
+const AI_LEVELS = {
+  easy:   { K: 5,  speeds: [1],          ang: 3.6, spd: .18, sloppy: .4 },
+  medium: { K: 8,  speeds: [1, 1.15],    ang: 2.3, spd: .1,  sloppy: .2 },
+  hard:   { K: 18, speeds: [1, 1.12, .92], ang: .8,  spd: .045, sloppy: 0 }
+};
+function aiPlan(st, level) {
+  const L = AI_LEVELS[level] || AI_LEVELS.medium;
+  const seat = curSeat(st), T = teamOf(st, seat), own = teamColor(st, T), coins = st.coins;
+  const ownLeft = own ? onBoardOf(coins, own) : onBoardOf(coins, 'w').concat(onBoardOf(coins, 'b'));
+  const qOn = !!coins[0];
+  const pendingMine = st.queen && !st.queen.covered && st.queen.by === T;
+  const targets = pendingMine ? ownLeft : ownLeft.concat(qOn ? [0] : []);
+  const cands = [];
+  for (let k = 0; k <= 16; k++) {
+    const lx = -BASE_X + k * (2 * BASE_X / 16);
+    if (!validPlace(lx, seat, coins)) continue;
+    const [sx, sy] = rotW(lx, BASE_Y, seat);
+    for (const t of targets) {
+      const [cx, cy] = coins[t];
+      for (const [px, py] of POCKETS) {
+        let dx = px - cx, dy = py - cy; const dC = Math.sqrt(dx * dx + dy * dy); dx /= dC; dy /= dC;
+        const gx = cx - dx * (R_C + R_S), gy = cy - dy * (R_C + R_S);
+        let ux = gx - sx, uy = gy - sy; const dS = Math.sqrt(ux * ux + uy * uy); if (dS < 1) continue; ux /= dS; uy /= dS;
+        const cos = ux * dx + uy * dy; if (cos < 0.3) continue;
+        if (Math.abs(gx) > HALF - R_S || Math.abs(gy) > HALF - R_S) continue;
+        if (!segClear(sx, sy, gx, gy, R_S, coins, t) || !segClear(cx, cy, px, py, R_C, coins, t)) continue;
+        const vc = Math.sqrt(2 * FR * dC) * 1.12 + 90;
+        const tr = cos * (1 + E_BALL) * M_S / (M_S + M_C);
+        const vi = vc / tr, v0 = Math.sqrt(vi * vi + 2 * FR * dS);
+        if (v0 > VMAX) continue;
+        cands.push({ lx, x: sx, y: sy, ux, uy, v0, h: cos * cos / (1 + (dS + dC) / 900), t });
+      }
+    }
+  }
+  cands.sort((a, b) => b.h - a.h);
+  const top = cands.slice(0, L.K);
+  const tried = [];
+  for (const c of top) for (const m of L.speeds) {
+    const v = Math.min(VMAX, c.v0 * m);
+    const shot = { x: c.x, y: c.y, vx: c.ux * v, vy: c.uy * v };
+    const { ev } = simulate(coins, shot, 10);
+    let score = c.h * 2;
+    for (const p of ev.pocketed) {
+      const col = colorOf(p.i);
+      if (col === 's') score -= 30; else if (col === 'q') score += 7; else if (!own || col === own) score += 10; else score -= 8;
+    }
+    tried.push({ lx: c.lx, shot, score });
+  }
+  let pick;
+  if (tried.length) {
+    tried.sort((a, b) => b.score - a.score);
+    pick = (Math.random() < L.sloppy) ? tried[Math.floor(Math.random() * Math.min(4, tried.length))] : tried[0];
+  } else {
+    // nothing clean: smash toward the nearest target from a free spot
+    const lx = startX(seat, coins), [sx, sy] = rotW(lx, BASE_Y, seat);
+    let tx = 0, ty = 0, best = 1e9;
+    for (const t of targets) { const d = (coins[t][0] - sx) ** 2 + (coins[t][1] - sy) ** 2; if (d < best) { best = d; tx = coins[t][0]; ty = coins[t][1]; } }
+    let ux = tx - sx, uy = ty - sy; const d = Math.sqrt(ux * ux + uy * uy) || 1; ux /= d; uy /= d;
+    pick = { lx, shot: { x: sx, y: sy, vx: ux * 3400, vy: uy * 3400 } };
+  }
+  // human-like error
+  const a = gauss() * L.ang * Math.PI / 180, f = Math.max(.3, 1 + gauss() * L.spd);
+  const s = pick.shot, ca = Math.cos(a), sa = Math.sin(a);
+  let vx = (s.vx * ca - s.vy * sa) * f, vy = (s.vx * sa + s.vy * ca) * f;
+  const sp = Math.sqrt(vx * vx + vy * vy); if (sp > VMAX) { vx *= VMAX / sp; vy *= VMAX / sp; }
+  return { lx: pick.lx, shot: { x: s.x, y: s.y, vx, vy } };
+}
+
+/* ---------------- game controller ---------------- */
+const G = {
+  mode: null, st: newState('1v1'), ctrl: ['human', 'ai', 'ai', 'ai'], names: ['', '', '', ''], teamNames: ['לבנים', 'שחורים'],
+  level: 'medium', phase: 'idle', viewSeat: 0, viewAngle: 0, rot: null, strikerX: 0, strikerTarget: null, placeValid: true,
+  showStriker: false, simB: null, simEv: null, simAcc: 0, simT: 0, evP: 0, evH: 0, fx: [], trail: [], token: 0, aiAnim: null,
+  myTeam: 0, settings: null, muted: false, grabbing: false
+};
+let sheetOpen = false, sheetView = '';
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('carrom.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('carrom.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+G.muted = store.get('muted', false);
+const paused = () => sheetOpen && G.mode !== 'online';
+
+function setTeamNames() {
+  const st = G.st;
+  G.teamNames = [0, 1].map(T => st.seats.filter(s => teamOf(st, s) === T).map(s => G.names[s] || 'שחקן').join(' + '));
+}
+function updateHud() {
+  const st = G.st, active = (G.mode && st.winner === null) ? teamOf(st, curSeat(st)) : -1;
+  for (const T of [0, 1]) {
+    $('team' + T).classList.toggle('on', active === T);
+    $('t' + T + 'name').textContent = G.mode ? G.teamNames[T] : (T ? 'שחקן 2' : 'שחקן 1');
+    const c = teamColor(st, T);
+    const chip = $('t' + T + 'chip'), cs = c && coinSetById(W$.data.equip.coins)[c];
+    chip.className = 'chip' + (c ? '' : ' n');
+    chip.style.background = cs ? `radial-gradient(circle at 35% 35%, ${cs.g[0]}, ${cs.g[2]})` : '';
+    $('t' + T + 'pts').textContent = String(teamPoints(st, T));
+    const q = st.queen && st.queen.by === T, qd = $('t' + T + 'q');
+    qd.hidden = !q; qd.classList.toggle('pending', !!(q && !st.queen.covered));
+    $('t' + T + 'sub').textContent = q && !st.queen.covered ? 'צריך לכסות את המלכה'
+      : c ? `${colorName(c)} · ${pocketedOf(st.coins, c).length}/9${q ? ' · מלכה' : ''}` : 'עוד בלי צבע';
+  }
+}
+function setCoach(main, sub) { $('coachMain').textContent = main || ''; $('coachSub').textContent = sub || ''; }
+let toastT = 0;
+function toast(m) { if (!m) return; const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+
+function beginTurn() {
+  const st = G.st, tok = ++G.token;
+  G.aiAnim = null; G.strikerTarget = null; G.simB = null;
+  updateHud();
+  if (st.winner !== null) {
+    G.phase = 'over'; G.showStriker = false;
+    settleBet();
+    setCoach(`${G.teamNames[st.winner]} ניצחו`, '');
+    setTimeout(() => { if (tok === G.token) showGameOver(); }, 900);
+    return;
+  }
+  const seat = curSeat(st);
+  G.strikerX = startX(seat, st.coins); G.placeValid = validPlace(G.strikerX, seat, st.coins); G.showStriker = true;
+  if (G.mode === 'local' && G.viewSeat !== seat) {
+    G.phase = 'rotating'; setCoach(`תור: ${G.names[seat]}`, 'הלוח מסתובב אליך…');
+    rotateTo(seat, () => { if (tok === G.token) enterPhase(seat); });
+    return;
+  }
+  enterPhase(seat);
+}
+function enterPhase(seat) {
+  const ctrl = G.ctrl[seat], name = G.names[seat] || 'שחקן', tok = G.token;
+  if (ctrl === 'human') {
+    G.phase = 'place';
+    setCoach(G.mode === 'local' ? `תור: ${name}` : 'התור שלך', G.placeValid ? HOWTO : 'הסטרייקר נוגע באסימון — הזז אותו');
+    if (G.mode === 'online') NET.pres({ aim: { n: G.st.shotNo, g: G.st.gid, x: Math.round(G.strikerX) } });
+  } else if (ctrl === 'ai') {
+    G.phase = 'ai'; setCoach(`${name} חושב…`, '');
+    const go = () => {
+      if (tok !== G.token) return;
+      if (paused()) { setTimeout(go, 300); return; }
+      const plan = aiPlan(G.st, G.level);
+      if (tok !== G.token) return;
+      G.aiAnim = { from: G.strikerX, to: plan.lx, t0: performance.now(), dur: 450 + Math.abs(plan.lx - G.strikerX) * 1.4, shot: plan.shot };
+    };
+    setTimeout(go, 550 + Math.random() * 450);
+  } else {
+    G.phase = 'remote'; setCoach(`${name} משחק…`, '');
+    checkRemote();
+  }
+}
+function fire(s, publish) {
+  const st = G.st, seat = curSeat(st);
+  let vx = +s.vx, vy = +s.vy; const sp = Math.sqrt(vx * vx + vy * vy); if (sp > VMAX) { vx *= VMAX / sp; vy *= VMAX / sp; }
+  const shot = { x: round2(+s.x), y: round2(+s.y), vx: round2(vx), vy: round2(vy) };
+  G.token++; G.aiAnim = null; G.strikerTarget = null;
+  if (publish && G.mode === 'online') NET.pres({ shot: Object.assign({ n: st.shotNo, g: st.gid, seat }, shot), aim: null });
+  G.simB = makeBodies(st.coins);
+  G.simB.push({ i: 19, x: shot.x, y: shot.y, vx: shot.vx, vy: shot.vy, r: R_S, m: M_S, out: false });
+  G.simEv = { pocketed: [], hits: [] }; G.evP = 0; G.evH = 0; G.simAcc = 0; G.simT = 0;
+  G.phase = 'sim'; G.showStriker = false; G.trail = [];
+  clack(Math.min(sp, 4000));
+}
+function onSettle() {
+  if (G.mode === 'online' && !NET.isHost) { G.phase = 'waitHost'; setCoach('מסנכרן…', ''); syncFromHost(); return; }
+  const st = applyRules(G.st, G.simB, G.simEv);
+  G.st = st; G.simB = null; G.phase = 'pause';
+  if (G.mode === 'online') NET.pres({ game: st });
+  toast(st.msg); updateHud();
+  const tok = ++G.token;
+  setTimeout(() => { if (tok === G.token) beginTurn(); }, 450);
+}
+function rotateTo(seat, done) {
+  const from = G.viewAngle, target = seat * Math.PI / 2;
+  let d = target - from; d = ((d % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  G.rot = { from, to: from + d, t0: performance.now(), dur: reduce ? 1 : 750, seat, done };
+}
+
+function startLocalGame(mode, fmt, level) {
+  leaveOnline();
+  G.mode = mode; G.level = level || 'medium'; G.st = newState(fmt);
+  if (mode === 'ai') {
+    G.ctrl = ['human', 'ai', 'ai', 'ai'];
+    G.names = fmt === '2v2' ? ['אתה', 'יריב ימני', 'השותף שלך', 'יריב שמאלי'] : ['אתה', '', 'המחשב', ''];
+  } else {
+    G.ctrl = ['human', 'human', 'human', 'human'];
+    G.names = fmt === '2v2' ? ['שחקן 1', 'שחקן 2', 'שחקן 3', 'שחקן 4'] : ['שחקן 1', '', 'שחקן 2', ''];
+  }
+  G.myTeam = 0; G.viewSeat = 0; G.viewAngle = 0; G.rot = null; G.fx = [];
+  G.settings = { mode, fmt, level: G.level };
+  G.bet = null;
+  if (mode === 'ai') placeBet(STAKE[G.level] || 100);
+  setTeamNames(); closeSheet(); beginTurn();
+}
+
+/* ---------------- touch: slide to place, flick to shoot ---------------- */
+const cv = $('board'), ctx = cv.getContext('2d');
+let P = null;
+function toLocal(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left - r.width / 2) / scale, y: (e.clientY - r.top - r.height / 2) / scale };
+}
+function canInput() {
+  return G.phase === 'place' && !G.rot && !paused() && G.ctrl[curSeat(G.st)] === 'human' && curSeat(G.st) === G.viewSeat;
+}
+function setStrikerX(x) {
+  const seat = curSeat(G.st);
+  G.strikerX = clamp(x, -BASE_X, BASE_X);
+  const ok = validPlace(G.strikerX, seat, G.st.coins);
+  if (ok !== G.placeValid) { G.placeValid = ok; $('coachSub').textContent = ok ? HOWTO : 'הסטרייקר נוגע באסימון — הזז אותו'; }
+  if (G.mode === 'online') NET.pres({ aim: { n: G.st.shotNo, g: G.st.gid, x: Math.round(G.strikerX) } });
+}
+cv.addEventListener('pointerdown', e => {
+  ensureAudio();
+  if (P || !canInput()) return;
+  // on the board the striker only shoots; placing happens on the rail under the board
+  const l = toLocal(e), dx = l.x - G.strikerX, dy = l.y - BASE_Y;
+  const grabR = Math.max(R_S * 1.8, 30 / scale);
+  if (dx * dx + dy * dy >= grabR * grabR) return;
+  P = { id: e.pointerId, mode: 'flick', sx: e.clientX, sy: e.clientY, samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }] };
+  G.grabbing = true;
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  e.preventDefault();
+});
+cv.addEventListener('pointermove', e => {
+  if (!P || e.pointerId !== P.id) return;
+  const list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  if (list.length) for (const c of list) P.samples.push({ t: c.timeStamp, x: c.clientX, y: c.clientY });
+  else P.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+  const cut = e.timeStamp - 400; while (P.samples.length > 2 && P.samples[0].t < cut) P.samples.shift();
+  {
+    const r = cv.getBoundingClientRect();
+    G.trail.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() });
+    if (G.trail.length > 40) G.trail.shift();
+  }
+});
+function flickVelocity(S) {
+  const n = S.length; if (n < 2) return null;
+  const tEnd = S[n - 1].t; let best = null, bs = 0;
+  for (let i = n - 1; i > 0; i--) {
+    const a = S[i]; if (tEnd - a.t > 140) break;
+    let j = i - 1; while (j > 0 && a.t - S[j].t < 35) j--;
+    const dt = a.t - S[j].t; if (dt <= 0) continue;
+    const vx = (a.x - S[j].x) / dt, vy = (a.y - S[j].y) / dt, sp = Math.sqrt(vx * vx + vy * vy);
+    if (sp > bs) { bs = sp; best = { vx, vy }; }
+  }
+  return best;
+}
+function endPointer(e, cancelled) {
+  if (!P || e.pointerId !== P.id) return;
+  const p = P; P = null; G.grabbing = false;
+  if (cancelled || p.mode !== 'flick' || !canInput()) { G.trail = []; return; }
+  const mdx = e.clientX - p.sx, mdy = e.clientY - p.sy;
+  if (mdx * mdx + mdy * mdy < 144) { G.trail = []; return; } // just a tap: no shot
+  p.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
+  const v = flickVelocity(p.samples);
+  let vx = v ? v.vx * 1000 / scale * POWER : 0, vy = v ? v.vy * 1000 / scale * POWER : 0;
+  const sp = Math.sqrt(vx * vx + vy * vy);
+  if (sp < 120) { G.trail = []; toast('התנופה הייתה חלשה מדי — החלק מהר יותר'); return; }
+  if (!G.placeValid) { G.trail = []; toast('הסטרייקר נוגע באסימון — הזז אותו קודם'); return; }
+  if (sp > VMAX) { vx *= VMAX / sp; vy *= VMAX / sp; }
+  const seat = curSeat(G.st), [x, y] = rotW(G.strikerX, BASE_Y, seat), [wvx, wvy] = rotW(vx, vy, seat);
+  fire({ x, y, vx: wvx, vy: wvy }, true);
+}
+cv.addEventListener('pointerup', e => endPointer(e, false));
+cv.addEventListener('pointercancel', e => endPointer(e, true));
+
+/* placement rail under the board: left/right on the rail = left/right on your baseline */
+const placer = $('placer'), thumb = placer.querySelector('.thumb');
+const RAIL_PAD = 26;
+let RP = null, railShown = { x: null, cls: '' };
+function railToX(clientX, off) {
+  const r = placer.getBoundingClientRect(), span = Math.max(1, r.width - 2 * RAIL_PAD);
+  const f = clamp((clientX + off - r.left - RAIL_PAD) / span, 0, 1);
+  return -BASE_X + f * 2 * BASE_X;
+}
+function thumbClientX() {
+  const r = placer.getBoundingClientRect();
+  return r.left + RAIL_PAD + (G.strikerX + BASE_X) / (2 * BASE_X) * (r.width - 2 * RAIL_PAD);
+}
+placer.addEventListener('pointerdown', e => {
+  ensureAudio();
+  if (RP || !canInput()) return;
+  const tx = thumbClientX();
+  RP = { id: e.pointerId, off: Math.abs(e.clientX - tx) < 30 ? tx - e.clientX : 0 };
+  setStrikerX(railToX(e.clientX, RP.off));
+  try { placer.setPointerCapture(e.pointerId); } catch (err) {}
+  e.preventDefault();
+});
+placer.addEventListener('pointermove', e => {
+  if (!RP || e.pointerId !== RP.id) return;
+  if (!canInput()) { RP = null; return; }
+  setStrikerX(railToX(e.clientX, RP.off));
+});
+const railEnd = e => { if (RP && e.pointerId === RP.id) RP = null; };
+placer.addEventListener('pointerup', railEnd);
+placer.addEventListener('pointercancel', railEnd);
+placer.addEventListener('keydown', e => {
+  if (!canInput()) return;
+  const d = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+  if (d) { setStrikerX(G.strikerX + d * (e.shiftKey ? 30 : 6)); e.preventDefault(); }
+});
+function updateRail() {
+  const active = canInput() || (G.phase === 'place' && G.ctrl[curSeat(G.st)] === 'human');
+  const cls = (active ? '' : 'off') + (active && !G.placeValid ? ' bad' : '') + (RP ? ' drag' : '');
+  if (cls !== railShown.cls) { placer.className = cls; railShown.cls = cls; }
+  const x = G.mode && G.showStriker ? G.strikerX : 0;
+  if (x !== railShown.x) {
+    railShown.x = x;
+    const w = placer.clientWidth;
+    thumb.style.transform = `translateX(${RAIL_PAD + (x + BASE_X) / (2 * BASE_X) * (w - 2 * RAIL_PAD)}px)`;
+    placer.setAttribute('aria-valuenow', String(Math.round(x / BASE_X * 100)));
+  }
+}
+
+/* ---------------- sound ---------------- */
+let AC = null, lastClack = 0;
+function ensureAudio() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (AC && AC.state === 'suspended') AC.resume().catch(() => {});
+}
+function clack(v) {
+  if (!AC || G.muted || v < 60) return;
+  const now = performance.now(); if (now - lastClack < 28) return; lastClack = now;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'triangle'; o.frequency.setValueAtTime(1500 + Math.random() * 700, t); o.frequency.exponentialRampToValueAtTime(500, t + .035);
+  g.gain.setValueAtTime(Math.min(.32, v / 7000), t); g.gain.exponentialRampToValueAtTime(.0001, t + .07);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + .08);
+}
+function plop() {
+  if (!AC || G.muted) return;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(70, t + .18);
+  g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .22);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + .24);
+}
+
+/* ---------------- drawing ---------------- */
+let scale = 1, dpr = 1, cssSize = 0;
+const boardImg = document.createElement('canvas');
+const sprites = {};
+function rrect(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function resize() {
+  const stage = $('stage'), w = stage.clientWidth, h = stage.clientHeight;
+  cssSize = Math.max(200, Math.floor(Math.min(w, h - 64)));
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  cv.style.width = cv.style.height = cssSize + 'px';
+  $('placer').style.width = cssSize + 'px'; railShown.x = null;
+  cv.width = cv.height = Math.round(cssSize * dpr);
+  scale = cssSize / (2 * (HALF + FRAME));
+  drawBoardImage();
+  makeSprites();
+}
+/* board skins: bought with game coins in the shop */
+const SKINS = [
+  { id: 'classic', name: 'קלאסי', price: 0, desc: 'ליבנה בהירה ומסגרת שישם',
+    frame: ['#7a4322', '#4f2613', '#6a381c'], gap: '#2a1309', surface: ['#f2dcae', '#e0bf86'], grain: '140,88,36', grainA: 1,
+    vignette: 'rgba(96,52,12,.24)', ink: '#2b1b10', red: '#b3302a', petal: 'rgba(179,48,42,.8)', rim: 'rgba(255,225,180,.28)' },
+  { id: 'walnut', name: 'אגוז כהה', price: 300, desc: 'עץ אגוז חם, מסגרת כהה ופס נחושת',
+    frame: ['#3d2619', '#1b0e07', '#2f1c12'], gap: '#100703', surface: ['#d2a06a', '#a86f3d'], grain: '70,35,10', grainA: 1.5,
+    vignette: 'rgba(50,22,5,.3)', ink: '#24120a', red: '#7e1f17', petal: 'rgba(126,31,23,.85)', rim: 'rgba(255,215,170,.32)', inlay: 'rgba(222,160,95,.75)' },
+  { id: 'marble', name: 'שיש וזהב', price: 700, desc: 'משטח שיש, מסגרת שיש ירוק וקווי זהב',
+    frame: ['#2a6356', '#0f2e27', '#1f4e43'], gap: '#0a1f1a', surface: ['#eef1ef', '#cfd6d3'], grain: '0,0,0', grainA: 0, veins: '88,100,106',
+    vignette: 'rgba(40,60,60,.2)', ink: '#a07a2c', red: '#1f5a4c', petal: 'rgba(160,122,44,.7)', rim: 'rgba(230,200,120,.65)', inlay: '#c9a24a', frameVeins: true },
+  { id: 'jaipur', name: 'ורוד ג׳ייפור', price: 1200, desc: 'אבן חול ורודה ומסגרת אריחים כחולים',
+    frame: ['#2f4a96', '#18275a', '#263c80'], gap: '#0f1838', surface: ['#f5c6b0', '#e4a18b'], grain: '160,70,60', grainA: .7,
+    vignette: 'rgba(120,40,40,.2)', ink: '#3b1d33', red: '#1f3f8f', petal: 'rgba(31,63,143,.7)', rim: 'rgba(255,255,255,.5)', inlay: '#f4ead6', tiles: true },
+  { id: 'royal', name: 'מלכותי', price: 2000, desc: 'לבד ירוק, מסגרת בורדו ושיבוצי זהב',
+    frame: ['#6e1628', '#3a0814', '#5c1121'], gap: '#22040b', surface: ['#55a07b', '#2f6e51'], grain: '0,0,0', grainA: 0, felt: true,
+    vignette: 'rgba(0,25,12,.3)', ink: '#ecd081', red: '#b02a2a', petal: 'rgba(236,208,129,.7)', rim: 'rgba(236,208,129,.75)', inlay: '#e0bd5f', tiles: true }
+];
+const skinById = id => SKINS.find(s => s.id === id) || SKINS[0];
+function drawBoardImage() {
+  boardImg.width = boardImg.height = cv.width;
+  drawBoard(boardImg, skinById(W$.data.equip.board));
+}
+function applySkin() { if (cv.width) { drawBoardImage(); makeSprites(); updateHud(); } }
+function drawBoard(canvas, skin) {
+  const W = canvas.width;
+  const g = canvas.getContext('2d'), k = W / (2 * (HALF + FRAME)), F = HALF + FRAME, rnd = rng(11);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, W);
+  g.setTransform(k, 0, 0, k, W / 2, W / 2);
+  // frame
+  let gr = g.createLinearGradient(-F, -F, F, F);
+  gr.addColorStop(0, skin.frame[0]); gr.addColorStop(.45, skin.frame[1]); gr.addColorStop(1, skin.frame[2]);
+  rrect(g, -F, -F, 2 * F, 2 * F, 54); g.fillStyle = gr; g.fill();
+  g.save(); rrect(g, -F, -F, 2 * F, 2 * F, 54); g.clip();
+  for (let i = 0; i < 70; i++) {
+    const off = rnd() * FRAME, side = Math.floor(rnd() * 4);
+    g.save(); g.rotate(side * Math.PI / 2);
+    g.beginPath(); const y = HALF + off; g.moveTo(-F, y);
+    for (let x = -F; x <= F; x += 40) g.lineTo(x, y + Math.sin(x * .01 + i) * 2);
+    g.strokeStyle = rnd() < .5 ? 'rgba(0,0,0,.14)' : 'rgba(255,210,160,.06)'; g.lineWidth = .8 + rnd() * 2; g.stroke(); g.restore();
+  }
+  gr = g.createLinearGradient(0, -F, 0, F); gr.addColorStop(0, 'rgba(255,230,200,.16)'); gr.addColorStop(.5, 'rgba(255,230,200,0)'); gr.addColorStop(1, 'rgba(0,0,0,.18)');
+  g.fillStyle = gr; g.fillRect(-F, -F, 2 * F, 2 * F);
+  if (skin.frameVeins) {
+    for (let i = 0; i < 40; i++) {
+      g.beginPath(); g.moveTo(-F + rnd() * 2 * F, -F + rnd() * 2 * F);
+      g.bezierCurveTo(-F + rnd() * 2 * F, -F + rnd() * 2 * F, -F + rnd() * 2 * F, -F + rnd() * 2 * F, -F + rnd() * 2 * F, -F + rnd() * 2 * F);
+      g.strokeStyle = `rgba(200,235,220,${.05 + rnd() * .1})`; g.lineWidth = .6 + rnd() * 2.5; g.stroke();
+    }
+  }
+  if (skin.tiles) {
+    for (let s = 0; s < 4; s++) {
+      g.save(); g.rotate(s * Math.PI / 2);
+      for (let x = -HALF + 25; x < HALF; x += 50) {
+        const y = HALF + FRAME / 2 + 3;
+        g.strokeStyle = skin.inlay; g.globalAlpha = .55; g.lineWidth = 1.6;
+        g.beginPath(); g.arc(x, y, 10, 0, 2 * Math.PI); g.stroke();
+        g.fillStyle = skin.inlay;
+        for (let p = 0; p < 4; p++) { const a = p * Math.PI / 2 + Math.PI / 4; g.beginPath(); g.arc(x + Math.cos(a) * 5, y + Math.sin(a) * 5, 2.4, 0, 2 * Math.PI); g.fill(); }
+        g.globalAlpha = 1;
+      }
+      g.restore();
+    }
+  }
+  g.restore();
+  if (skin.inlay) { g.strokeStyle = skin.inlay; g.lineWidth = 3; rrect(g, -F + 14, -F + 14, 2 * F - 28, 2 * F - 28, 42); g.stroke(); }
+  g.fillStyle = skin.gap; g.fillRect(-HALF - 7, -HALF - 7, 2 * HALF + 14, 2 * HALF + 14);
+  // playing surface
+  gr = g.createLinearGradient(-HALF, -HALF, HALF, HALF); gr.addColorStop(0, skin.surface[0]); gr.addColorStop(1, skin.surface[1]);
+  g.fillStyle = gr; g.fillRect(-HALF, -HALF, 2 * HALF, 2 * HALF);
+  g.save(); g.beginPath(); g.rect(-HALF, -HALF, 2 * HALF, 2 * HALF); g.clip();
+  if (skin.grainA) {
+    for (let i = 0; i < 110; i++) {
+      const y0 = -HALF + rnd() * 2 * HALF, amp = 2 + rnd() * 7, ph = rnd() * 6, fq = .003 + rnd() * .009;
+      g.beginPath(); g.moveTo(-HALF, y0);
+      for (let x = -HALF; x <= HALF; x += 16) g.lineTo(x, y0 + Math.sin(x * fq + ph) * amp);
+      g.strokeStyle = `rgba(${skin.grain},${(.03 + rnd() * .07) * skin.grainA})`; g.lineWidth = .6 + rnd() * 2.4; g.stroke();
+    }
+  }
+  if (skin.veins) {
+    for (let i = 0; i < 34; i++) {
+      g.beginPath(); g.moveTo(-HALF - 40 + rnd() * 1080, -HALF - 40 + rnd() * 1080);
+      g.bezierCurveTo(-HALF + rnd() * 1000, -HALF + rnd() * 1000, -HALF + rnd() * 1000, -HALF + rnd() * 1000, -HALF - 40 + rnd() * 1080, -HALF - 40 + rnd() * 1080);
+      g.strokeStyle = `rgba(${skin.veins},${.06 + rnd() * .2})`; g.lineWidth = .5 + rnd() * 3; g.stroke();
+    }
+  }
+  if (skin.felt) {
+    for (let i = 0; i < 2600; i++) {
+      g.fillStyle = rnd() < .5 ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.06)';
+      g.fillRect(-HALF + rnd() * 1000, -HALF + rnd() * 1000, 2.2, 2.2);
+    }
+  }
+  const vg = g.createRadialGradient(0, 0, 220, 0, 0, 740); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, skin.vignette);
+  g.fillStyle = vg; g.fillRect(-HALF, -HALF, 2 * HALF, 2 * HALF);
+  const ins = g.createLinearGradient(0, -HALF, 0, -HALF + 24); ins.addColorStop(0, 'rgba(0,0,0,.28)'); ins.addColorStop(1, 'rgba(0,0,0,0)');
+  for (let s = 0; s < 4; s++) { g.save(); g.rotate(s * Math.PI / 2); g.fillStyle = ins; g.fillRect(-HALF, -HALF, 2 * HALF, 24); g.restore(); }
+  g.restore();
+  // markings
+  const INK = skin.ink, RED = skin.red;
+  g.strokeStyle = INK; g.lineWidth = 2.2;
+  for (let s = 0; s < 4; s++) {
+    g.save(); g.rotate(s * Math.PI / 2);
+    g.beginPath(); g.moveTo(-BASE_X - .5, 363); g.lineTo(BASE_X + .5, 363); g.moveTo(-BASE_X - .5, 320); g.lineTo(BASE_X + .5, 320); g.stroke();
+    for (const sx of [-BASE_X - .5, BASE_X + .5]) {
+      g.beginPath(); g.arc(sx, BASE_Y, 21.5, 0, 2 * Math.PI); g.stroke();
+      g.beginPath(); g.arc(sx, BASE_Y, 15, 0, 2 * Math.PI); g.fillStyle = RED; g.fill();
+    }
+    // corner arrow toward the pocket
+    g.lineWidth = 1.8;
+    g.beginPath(); g.moveTo(246, 246); g.lineTo(404, 404); g.stroke();
+    g.beginPath(); g.moveTo(404, 404); g.lineTo(388, 404); g.moveTo(404, 404); g.lineTo(404, 388); g.stroke();
+    g.beginPath(); g.arc(228, 228, 26, 1.25 * Math.PI + 1.0, 1.25 * Math.PI - 1.0 + 2 * Math.PI); g.stroke();
+    g.lineWidth = 2.2;
+    g.restore();
+  }
+  g.beginPath(); g.arc(0, 0, 115, 0, 2 * Math.PI); g.stroke();
+  g.lineWidth = 1.1; g.beginPath(); g.arc(0, 0, 108, 0, 2 * Math.PI); g.stroke();
+  for (let p = 0; p < 8; p++) {
+    g.save(); g.rotate(p * Math.PI / 4 + Math.PI / 8);
+    g.beginPath(); g.moveTo(30, 0); g.quadraticCurveTo(66, -20, 100, 0); g.quadraticCurveTo(66, 20, 30, 0);
+    g.fillStyle = p % 2 ? skin.petal : 'rgba(0,0,0,.08)'; g.fill(); g.lineWidth = 1.1; g.stroke(); g.restore();
+  }
+  g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 21.5, 0, 2 * Math.PI); g.fillStyle = RED; g.fill(); g.stroke();
+  // pockets
+  for (const [px, py] of POCKETS) {
+    const pg = g.createRadialGradient(px - px * .01, py - py * .01, 3, px, py, POCKET_DRAW);
+    pg.addColorStop(0, '#000'); pg.addColorStop(.75, '#120804'); pg.addColorStop(1, '#3a1d0c');
+    g.beginPath(); g.arc(px, py, POCKET_DRAW, 0, 2 * Math.PI); g.fillStyle = pg; g.fill();
+    g.lineWidth = 2; g.strokeStyle = skin.rim; g.stroke(); g.strokeStyle = INK;
+  }
+}
+/* coin sets and strikers: also sold in the shop */
+const COIN_SETS = [
+  { id: 'c-classic', name: 'קלאסי', price: 0, desc: 'שנהב והובנה, מלכה אדומה', labels: ['לבנים', 'שחורים'],
+    w: { g: ['#fffbf2', '#eadbbd', '#c6ae86'], rim: '#8f7a58', ring: 'rgba(0,0,0,.16)' },
+    b: { g: ['#6d5d55', '#30261f', '#151010'], rim: '#000', ring: 'rgba(255,255,255,.14)' },
+    q: { g: ['#ff8a72', '#cf302c', '#8e1616'], rim: '#4a0808', ring: 'rgba(0,0,0,.16)' } },
+  { id: 'c-ocean', name: 'חוף וים', price: 250, desc: 'זהב של חול מול כחול עמוק', labels: ['זהובים', 'כחולים'],
+    w: { g: ['#fff4c9', '#f1c75b', '#c08a1e'], rim: '#7a5510', ring: 'rgba(120,70,0,.25)' },
+    b: { g: ['#86b8f2', '#2b5fae', '#122e63'], rim: '#0a1a3a', ring: 'rgba(255,255,255,.2)' },
+    q: { g: ['#ffb19a', '#f0553e', '#a8261a'], rim: '#5a1006', ring: 'rgba(0,0,0,.18)' } },
+  { id: 'c-gems', name: 'אבני חן', price: 600, desc: 'פנינים מול אזמרגדים, מלכה מאודם', labels: ['פנינים', 'אזמרגדים'],
+    w: { g: ['#ffffff', '#eef0f8', '#c3c8dc'], rim: '#8a8fb0', ring: 'rgba(214,120,200,.4)', shine: true },
+    b: { g: ['#8ff0c0', '#1fa56a', '#0a5234'], rim: '#04301d', ring: 'rgba(255,255,255,.28)', shine: true },
+    q: { g: ['#ff9aa8', '#e0193f', '#7d0620'], rim: '#40020f', ring: 'rgba(255,255,255,.3)', shine: true } },
+  { id: 'c-royal', name: 'שנהב ואובסידיאן', price: 1000, desc: 'שוליים מזהב טהור', labels: ['שנהב', 'אובסידיאן'],
+    w: { g: ['#fffdf5', '#f1e6cc', '#d6c39a'], rim: '#c99a2e', rimW: 2.6, ring: 'rgba(201,154,46,.6)' },
+    b: { g: ['#4a4a55', '#1a1a22', '#050508'], rim: '#e0b84a', rimW: 2.6, ring: 'rgba(224,184,74,.55)' },
+    q: { g: ['#ffd27a', '#d4302a', '#7a0c0c'], rim: '#f2c94c', rimW: 2.6, ring: 'rgba(242,201,76,.6)' } }
+];
+const STRIKERS = [
+  { id: 's-classic', name: 'קלאסי', price: 0, desc: 'שנהב עם טבעות זעפרן', g: ['#ffffff', '#f3ecdc', '#d3c39f'], rim: '#8f7d5a', style: 'classic' },
+  { id: 's-sun', name: 'שמש', price: 200, desc: 'כתום חם עם קרני אור', g: ['#fff3b0', '#ffb92e', '#e0701a'], rim: '#8a3c08', style: 'rays' },
+  { id: 's-galaxy', name: 'גלקסיה', price: 500, desc: 'סגול עמוק מלא כוכבים', g: ['#9a7bff', '#3b1f8f', '#120a33'], rim: '#07041a', style: 'stars' },
+  { id: 's-lotus', name: 'לוטוס', price: 900, desc: 'לבן עם עלי כותרת ורודים', g: ['#ffffff', '#fde8f0', '#efc0d4'], rim: '#a05a7a', style: 'petals' },
+  { id: 's-gold', name: 'זהב', price: 1500, desc: 'זהב מלוטש עם חריטה', g: ['#fff5c2', '#f0c24a', '#a8740f'], rim: '#5e3e05', rimW: 2.4, style: 'engraved' }
+];
+const coinSetById = id => COIN_SETS.find(s => s.id === id) || COIN_SETS[0];
+const strikerById = id => STRIKERS.find(s => s.id === id) || STRIKERS[0];
+// one disc (coin or striker) drawn into its own canvas, 2 units of padding around it
+function renderDisc(spec, r, px, style) {
+  const c = document.createElement('canvas'); c.width = c.height = px;
+  const g = c.getContext('2d'), pad = 2, k = px / (2 * r + 2 * pad); g.setTransform(k, 0, 0, k, px / 2, px / 2);
+  const gr = g.createRadialGradient(-r * .35, -r * .4, r * .1, 0, 0, r);
+  gr.addColorStop(0, spec.g[0]); gr.addColorStop(.55, spec.g[1]); gr.addColorStop(1, spec.g[2]);
+  g.beginPath(); g.arc(0, 0, r, 0, 2 * Math.PI); g.fillStyle = gr; g.fill();
+  const rw = spec.rimW || 1.4;
+  g.globalAlpha = spec.rimW ? 1 : .6; g.lineWidth = rw; g.strokeStyle = spec.rim;
+  g.beginPath(); g.arc(0, 0, r - rw / 2, 0, 2 * Math.PI); g.stroke(); g.globalAlpha = 1;
+  if (style) strikerPattern(g, r, style);
+  else { g.lineWidth = 1.1; g.strokeStyle = spec.ring; for (const f of [.74, .46]) { g.beginPath(); g.arc(0, 0, r * f, 0, 2 * Math.PI); g.stroke(); } }
+  g.beginPath(); g.ellipse(-r * .3, -r * .38, r * .36, r * .18, -.5, 0, 2 * Math.PI); g.fillStyle = 'rgba(255,255,255,.2)'; g.fill();
+  if (spec.shine) { g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.arc(-r * .42, -r * .44, r * .08, 0, 2 * Math.PI); g.fill(); }
+  return c;
+}
+function strikerPattern(g, r, style) {
+  const TAU = 2 * Math.PI;
+  const ring = (f, w, col) => { g.lineWidth = w; g.strokeStyle = col; g.beginPath(); g.arc(0, 0, r * f, 0, TAU); g.stroke(); };
+  if (style === 'classic') {
+    ring(.74, 3.2, '#e99b2b'); ring(.46, 2, '#c43d2a'); g.fillStyle = '#1e3158';
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.beginPath(); g.arc(Math.cos(a) * r * .6, Math.sin(a) * r * .6, 1.7, 0, TAU); g.fill(); }
+    g.beginPath(); g.arc(0, 0, 3, 0, TAU); g.fill();
+  } else if (style === 'rays') {
+    g.strokeStyle = 'rgba(150,55,5,.6)'; g.lineWidth = 2.2; g.lineCap = 'round';
+    for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; g.beginPath(); g.moveTo(Math.cos(a) * r * .36, Math.sin(a) * r * .36); g.lineTo(Math.cos(a) * r * .8, Math.sin(a) * r * .8); g.stroke(); }
+    g.beginPath(); g.arc(0, 0, r * .26, 0, TAU); g.fillStyle = '#fff6c8'; g.fill(); ring(.26, 1.6, 'rgba(150,55,5,.7)');
+  } else if (style === 'stars') {
+    const rnd = rng(5); ring(.8, 1.6, 'rgba(200,180,255,.55)');
+    for (let i = 0; i < 18; i++) {
+      const a = rnd() * TAU, d = Math.sqrt(rnd()) * r * .85;
+      g.fillStyle = `rgba(255,255,255,${.5 + rnd() * .5})`; g.beginPath(); g.arc(Math.cos(a) * d, Math.sin(a) * d, .5 + rnd() * 1.4, 0, TAU); g.fill();
+    }
+    g.fillStyle = '#fff'; g.beginPath();
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 - Math.PI / 2, d = i % 2 ? r * .1 : r * .32; g.lineTo(Math.cos(a) * d, Math.sin(a) * d); }
+    g.closePath(); g.fill();
+  } else if (style === 'petals') {
+    for (let i = 0; i < 8; i++) {
+      g.save(); g.rotate(i * Math.PI / 4); g.beginPath(); g.moveTo(r * .18, 0);
+      g.quadraticCurveTo(r * .5, -r * .24, r * .8, 0); g.quadraticCurveTo(r * .5, r * .24, r * .18, 0);
+      g.fillStyle = 'rgba(232,105,155,.55)'; g.fill(); g.lineWidth = 1; g.strokeStyle = 'rgba(160,60,100,.6)'; g.stroke(); g.restore();
+    }
+    g.beginPath(); g.arc(0, 0, r * .16, 0, TAU); g.fillStyle = '#f2b636'; g.fill();
+  } else if (style === 'engraved') {
+    ring(.84, 1.4, 'rgba(94,62,5,.55)'); ring(.66, 2.4, 'rgba(94,62,5,.45)'); ring(.44, 1.2, 'rgba(94,62,5,.55)');
+    g.strokeStyle = 'rgba(94,62,5,.5)'; g.lineWidth = 1.2;
+    for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; g.beginPath(); g.moveTo(Math.cos(a) * r * .68, Math.sin(a) * r * .68); g.lineTo(Math.cos(a) * r * .82, Math.sin(a) * r * .82); g.stroke(); }
+    g.beginPath(); g.arc(0, 0, r * .2, 0, TAU); g.fillStyle = '#fff5c2'; g.fill();
+  }
+}
+function makeSprites() {
+  const set = coinSetById(W$.data.equip.coins), stk = strikerById(W$.data.equip.striker);
+  for (const k of ['w', 'b', 'q']) sprites[k] = renderDisc(set[k], R_C, Math.max(8, Math.ceil((2 * R_C + 4) * scale * dpr)), null);
+  sprites.s = renderDisc(stk, R_S, Math.max(8, Math.ceil((2 * R_S + 4) * scale * dpr)), stk.style);
+  const th = document.querySelector('#placer .thumb');
+  if (th) th.style.background = `url(${renderDisc(stk, R_S, 104, stk.style).toDataURL()}) center/100% 100% no-repeat`;
+}
+function drawDisc(kind, x, y, sh, alpha, sc) {
+  const r = (kind === 's' ? R_S : R_C) * (sc || 1), pad = 2 * (sc || 1);
+  ctx.globalAlpha = (alpha == null ? 1 : alpha) * .3; ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(x + sh[0], y + sh[1], r, 0, 2 * Math.PI); ctx.fill();
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  ctx.drawImage(sprites[kind], x - r - pad, y - r - pad, 2 * (r + pad), 2 * (r + pad));
+  ctx.globalAlpha = 1;
+}
+function draw(now) {
+  const W = cv.width; if (!W) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, W);
+  ctx.translate(W / 2, W / 2); ctx.rotate(G.viewAngle);
+  ctx.drawImage(boardImg, -W / 2, -W / 2, W, W);
+  const k = W / (2 * (HALF + FRAME)); ctx.scale(k, k);
+  const st = G.st, seat = curSeat(st), a = -G.viewAngle;
+  const sh = [3 * Math.cos(a) - 4.5 * Math.sin(a), 3 * Math.sin(a) + 4.5 * Math.cos(a)];
+  if (G.showStriker && G.mode) {
+    ctx.save(); ctx.rotate(-seat * Math.PI / 2);
+    ctx.fillStyle = `rgba(242,165,49,${.2 + .12 * Math.sin(now / 280)})`;
+    rrect(ctx, -BASE_X - 22, 320, 2 * BASE_X + 44, 43, 21.5); ctx.fill(); ctx.restore();
+  }
+  if (G.simB) {
+    for (const b of G.simB) if (!b.out) drawDisc(b.i === 19 ? 's' : colorOf(b.i), b.x, b.y, sh);
+  } else {
+    for (let i = 0; i < 19; i++) if (st.coins[i]) drawDisc(colorOf(i), st.coins[i][0], st.coins[i][1], sh);
+  }
+  for (const f of G.fx) {
+    const p = Math.min(1, (now - f.t0) / 300), e = p * p, [px, py] = POCKETS[f.p];
+    drawDisc(f.kind, f.x + (px - f.x) * e, f.y + (py - f.y) * e, [0, 0], 1 - p, 1 - .55 * p);
+  }
+  if (G.showStriker && G.mode) {
+    const [x, y] = rotW(G.strikerX, BASE_Y, seat);
+    drawDisc('s', x, y, sh);
+    if (!G.placeValid && G.phase === 'place') {
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(212,70,47,.95)'; ctx.beginPath(); ctx.arc(x, y, R_S + 3, 0, 2 * Math.PI); ctx.stroke();
+    } else if (G.grabbing) {
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(242,165,49,.9)'; ctx.beginPath(); ctx.arc(x, y, R_S + 4, 0, 2 * Math.PI); ctx.stroke();
+    }
+  }
+  if (G.trail.length) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const t0 = performance.now();
+    G.trail = G.trail.filter(p => t0 - p.t < 260);
+    for (const p of G.trail) {
+      const age = (t0 - p.t) / 260;
+      ctx.globalAlpha = .55 * (1 - age); ctx.fillStyle = '#fff6e0';
+      ctx.beginPath(); ctx.arc(p.x, p.y, 7 * (1 - age) + 2, 0, 2 * Math.PI); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+function processEvents(now) {
+  const ev = G.simEv;
+  while (G.evP < ev.pocketed.length) {
+    const p = ev.pocketed[G.evP++];
+    G.fx.push({ kind: p.i === 19 ? 's' : colorOf(p.i), x: p.x, y: p.y, p: p.p, t0: now }); plop();
+  }
+  let mx = 0; while (G.evH < ev.hits.length) mx = Math.max(mx, ev.hits[G.evH++]);
+  if (mx) clack(mx);
+  if (ev.hits.length > 4000) { ev.hits.length = 0; G.evH = 0; }
+}
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
+  if (G.rot) {
+    const r = G.rot, p = Math.min(1, (now - r.t0) / r.dur), e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+    G.viewAngle = r.from + (r.to - r.from) * e;
+    if (p >= 1) { G.viewAngle = r.seat * Math.PI / 2; G.viewSeat = r.seat; G.rot = null; r.done(); }
+  }
+  if (!paused()) {
+    if (G.phase === 'sim' && G.simB) {
+      G.simAcc += dt; G.simT += dt; let n = 0;
+      while (G.simAcc >= DT && n < 80) { step(G.simB, G.simEv); G.simAcc -= DT; n++; }
+      processEvents(now);
+      if (!anyMoving(G.simB) || G.simT > 25) {
+        if (G.simT > 25) for (const b of G.simB) { b.vx = 0; b.vy = 0; }
+        G.phase = 'settled'; onSettle();
+      }
+    }
+    if (G.aiAnim) {
+      const A = G.aiAnim, p = Math.min(1, (now - A.t0) / A.dur), e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      G.strikerX = A.from + (A.to - A.from) * e; G.placeValid = true;
+      if (G.mode === 'online') NET.pres({ aim: { n: G.st.shotNo, g: G.st.gid, x: Math.round(G.strikerX) } });
+      if (p >= 1) fire(A.shot, true);
+    }
+  } else if (G.aiAnim) G.aiAnim.t0 += dt * 1000;
+  if (G.strikerTarget != null && G.phase === 'remote') G.strikerX += (G.strikerTarget - G.strikerX) * Math.min(1, dt * 14);
+  if (G.fx.length) G.fx = G.fx.filter(f => now - f.t0 < 300);
+  draw(now);
+  updateRail();
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- connection: inside claude.ai use its room/db; as the app use a free MQTT message server (like Cheetah) ---------------- */
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === 'function');
+const APP_URL = 'https://dandooger.github.io/carrom/';
+const MQ_ROOT = 'carrom-dg/v1/';
+const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081'];
+let mqLib = null;
+function loadMqtt() {
+  if (window.mqtt) return Promise.resolve();
+  if (!mqLib) mqLib = new Promise((ok, bad) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js';
+    s.onload = ok; s.onerror = () => { mqLib = null; bad(new Error('no internet')); };
+    document.head.append(s);
+  });
+  return mqLib;
+}
+// connect to the first broker that answers; `will` is published by the server if we vanish
+async function mqClient(will) {
+  await loadMqtt();
+  for (const url of BROKERS) {
+    try {
+      return await new Promise((ok, bad) => {
+        const c = window.mqtt.connect(url, { connectTimeout: 7000, reconnectPeriod: 3000, keepalive: 20, clean: true,
+          clientId: 'cr_' + Math.random().toString(36).slice(2, 12), will });
+        const t = setTimeout(() => { c.end(true); bad(new Error('timeout')); }, 8000);
+        c.on('connect', () => { clearTimeout(t); ok(c); });
+        c.on('error', () => {});
+      });
+    } catch (e) {}
+  }
+  throw new Error('no broker');
+}
+// a game room with the same shape the game uses from claude.ai's room: presence, peers, onPeers, leave
+async function mqJoin(name) {
+  const me = 'p' + Math.random().toString(36).slice(2, 12);
+  const base = MQ_ROOT + 'r/' + name + '/p/', mine = base + me;
+  const c = await mqClient({ topic: mine, payload: '', qos: 1, retain: true });
+  const S = { mine: {}, peers: new Map(), handlers: [], closed: false, pubT: 0, lastPub: 0, emitT: 0 };
+  const snapshot = () => [{ peer: me, sameTab: true, presence: S.mine }].concat([...S.peers].map(([peer, v]) => ({ peer, sameTab: false, presence: v.p })));
+  const emit = () => { if (S.emitT || S.closed) return; S.emitT = setTimeout(() => { S.emitT = 0; const peers = snapshot(); for (const h of S.handlers.slice()) { try { h({ peers }); } catch (e) {} } }, 0); };
+  const publish = () => { S.pubT = 0; S.lastPub = Date.now(); if (!S.closed) c.publish(mine, JSON.stringify({ p: S.mine, t: Date.now() }), { qos: 1, retain: true }); };
+  c.on('message', (topic, buf) => {
+    if (S.closed || !topic.startsWith(base)) return;
+    const id = topic.slice(base.length); if (!id || id === me) return;
+    const s = buf.toString();
+    if (!s) S.peers.delete(id);
+    else {
+      try {
+        const o = JSON.parse(s);
+        if (o && typeof o.p === 'object' && o.p && !(o.t && o.t < Date.now() - 180000)) S.peers.set(id, { p: o.p, seen: Date.now() });
+      } catch (e) {}
+    }
+    emit();
+  });
+  c.on('connect', () => { if (!S.closed) { c.subscribe(base + '+', { qos: 1 }); publish(); } });
+  c.subscribe(base + '+', { qos: 1 });
+  // heartbeat: re-announce, and forget anyone silent for too long
+  const hb = setInterval(() => {
+    publish();
+    const cut = Date.now() - 80000; let gone = false;
+    for (const [id, v] of S.peers) if (v.seen < cut) { S.peers.delete(id); gone = true; }
+    if (gone) emit();
+  }, 25000);
+  return {
+    name,
+    presence(patch) {
+      if (S.closed) return Promise.resolve();
+      for (const k in patch) { if (patch[k] === null) delete S.mine[k]; else S.mine[k] = patch[k]; }
+      S.mine = Object.assign({}, S.mine);
+      if (!S.pubT) S.pubT = setTimeout(publish, Math.max(0, 70 - (Date.now() - S.lastPub)));
+      emit();
+      return Promise.resolve();
+    },
+    peers: snapshot,
+    onPeers(fn) { S.handlers.push(fn); emit(); return () => { S.handlers = S.handlers.filter(h => h !== fn); }; },
+    leave() {
+      if (S.closed) return Promise.resolve();
+      S.closed = true; clearInterval(hb); clearTimeout(S.pubT);
+      try { c.publish(mine, '', { qos: 1, retain: true }, () => c.end()); } catch (e) {}
+      setTimeout(() => { try { c.end(true); } catch (e) {} }, 1500);
+      return Promise.resolve();
+    }
+  };
+}
+// accounts as retained messages, with the small slice of claude.ai's db the game uses: get, set, update, onSnapshot, acquire
+function mqDb(c) {
+  const cache = {}, listeners = {}, waiters = {}, asked = {};
+  const snap = topic => {
+    let d; try { d = cache[topic] ? JSON.parse(cache[topic]) : undefined; } catch (e) {}
+    return { exists: !!d, data: () => d && JSON.parse(JSON.stringify(d)), metadata: { fromCache: false, hasPendingWrites: false } };
+  };
+  const fire = topic => { for (const f of (listeners[topic] || []).slice()) { try { f(snap(topic)); } catch (e) {} } };
+  const settle = topic => { for (const w of (waiters[topic] || []).splice(0)) w(); };
+  c.on('message', (topic, buf) => {
+    if (!topic.startsWith(MQ_ROOT + 'd/')) return;
+    const s = buf.toString(), changed = cache[topic] !== s;
+    cache[topic] = s || null;
+    settle(topic);
+    if (changed) fire(topic);
+  });
+  c.on('connect', () => { for (const t in asked) c.subscribe(t, { qos: 1 }); });
+  // the first read waits briefly for the server's stored copy; no answer means "doesn't exist"
+  const ensure = topic => new Promise(ok => {
+    if (topic in cache) return ok();
+    (waiters[topic] = waiters[topic] || []).push(ok);
+    if (asked[topic]) return;
+    asked[topic] = true;
+    c.subscribe(topic, { qos: 1 }, () => setTimeout(() => { if (!(topic in cache)) cache[topic] = null; settle(topic); }, 1800));
+  });
+  const write = (topic, d) => {
+    const s = JSON.stringify(d);
+    cache[topic] = s;
+    return new Promise((ok, bad) => c.publish(topic, s, { qos: 1, retain: true }, err => err ? bad(err) : ok()));
+  };
+  return {
+    doc(path) {
+      const topic = MQ_ROOT + 'd/' + path;
+      return {
+        path,
+        get: async () => { await ensure(topic); return snap(topic); },
+        set: async d => { await write(topic, d); fire(topic); },
+        update: async d => {
+          await ensure(topic);
+          const cur = snap(topic); if (!cur.exists) throw { code: 'invalid_argument' };
+          await write(topic, Object.assign(cur.data(), JSON.parse(JSON.stringify(d)))); fire(topic);
+        },
+        acquire: async () => ({ acquired: true }),
+        onSnapshot(fn) {
+          (listeners[topic] = listeners[topic] || []).push(fn);
+          ensure(topic).then(() => { if ((listeners[topic] || []).includes(fn)) fn(snap(topic)); });
+          return () => { listeners[topic] = (listeners[topic] || []).filter(f => f !== fn); };
+        }
+      };
+    }
+  };
+}
+// the app: install button and offline cache (not inside claude.ai)
+const INSTALL = { deferred: null, installed: false };
+try { INSTALL.installed = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) {}
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); INSTALL.deferred = e; });
+addEventListener('appinstalled', () => { INSTALL.installed = true; if (sheetView === 'home') showHome(); });
+if (!IN_CLAUDE && 'serviceWorker' in navigator && location.protocol === 'https:') {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+async function installApp() {
+  if (INSTALL.deferred) {
+    const d = INSTALL.deferred; INSTALL.deferred = null;
+    d.prompt(); try { await d.userChoice; } catch (e) {}
+    return;
+  }
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const steps = ios
+    ? ['פותחים את הדף הזה ב-Safari.', 'לוחצים על כפתור השיתוף (ריבוע עם חץ למעלה).', 'בוחרים "הוסף למסך הבית" ולוחצים "הוסף".']
+    : ['פותחים את הדף הזה ב-Chrome.', 'לוחצים על ⋮ (שלוש הנקודות למעלה).', 'בוחרים "התקן אפליקציה" או "הוסף למסך הבית".'];
+  openSheet('install',
+    el('h2', { text: 'התקנת האפליקציה' }),
+    el('ol', { class: 'rules' }, steps.map(s => el('li', { text: s }))),
+    el('p', { class: 'note', text: 'האייקון של קארום יופיע במסך הבית והמשחק ייפתח במסך מלא.' }),
+    btn('חזרה', '', showHome, 'quiet'));
+}
+
+/* ---------------- wallet + player account (username and secret code, like Cheetah) ---------------- */
+const START_COINS = 300, STAKE = { easy: 50, medium: 100, hard: 200 }, ONLINE_STAKE = 100, GIFT = 100;
+const FREE_ITEMS = ['classic', 'c-classic', 's-classic'];
+function cleanWallet(d) {
+  const o = d && typeof d === 'object' ? d : {};
+  const known = new Set([...SKINS, ...COIN_SETS, ...STRIKERS].map(s => s.id));
+  const coins = Number.isFinite(o.coins) ? Math.max(0, Math.floor(o.coins)) : START_COINS;
+  const owned = Array.isArray(o.owned) ? o.owned.filter((id, i, a) => known.has(id) && a.indexOf(id) === i) : [];
+  for (const f of FREE_ITEMS) if (!owned.includes(f)) owned.push(f);
+  const e = o.equip && typeof o.equip === 'object' ? o.equip : {};
+  const pick = (v, fb) => owned.includes(v) ? v : fb;
+  return {
+    coins, owned,
+    equip: { board: pick(e.board, pick(o.skin, 'classic')), coins: pick(e.coins, 'c-classic'), striker: pick(e.striker, 's-classic') },
+    wins: Number.isFinite(o.wins) ? Math.max(0, Math.floor(o.wins)) : 0, games: Number.isFinite(o.games) ? Math.max(0, Math.floor(o.games)) : 0
+  };
+}
+const W$ = { data: cleanWallet(store.get('wallet', null)), chain: Promise.resolve() };
+const ACC = { db: null, ref: null, unsub: null, key: null, name: '', hash: null, local: false };
+ACC.ready = (async () => {
+  try {
+    if (IN_CLAUDE) ACC.db = await window.claude.use('db');
+    else ACC.db = mqDb(await mqClient());
+  } catch (e) { ACC.db = null; }
+  return ACC.db;
+})();
+function walletBody() {
+  const d = W$.data;
+  return { coins: d.coins, owned: d.owned.slice(), equip: Object.assign({}, d.equip), wins: d.wins, games: d.games, t: Date.now() };
+}
+function saveWallet() {
+  store.set('wallet', W$.data);
+  if (ACC.ref) { const ref = ACC.ref, body = walletBody(); W$.chain = W$.chain.then(() => ref.update(body)).catch(() => {}); }
+  refreshWalletUI();
+}
+function changeCoins(d) { W$.data.coins = Math.max(0, W$.data.coins + d); saveWallet(); }
+function refreshWalletUI() {
+  document.querySelectorAll('.wallet-amt').forEach(e => { e.textContent = W$.data.coins.toLocaleString('he-IL'); });
+  if (sheetView === 'shop') showShop();
+}
+function refreshAccountUI() { document.querySelectorAll('.acct-name').forEach(e => { e.textContent = ACC.name; }); }
+function walletPill() {
+  return el('div', { class: 'wallet' }, el('span', { class: 'coin' }), el('span', { class: 'wallet-amt', text: W$.data.coins.toLocaleString('he-IL') }), el('span', { text: 'מטבעות' }));
+}
+// a username becomes a path-safe key: lower-case UTF-8 bytes as hex
+const nameKey = n => Array.from(new TextEncoder().encode(n.trim().replace(/\s+/g, ' ').toLowerCase())).map(b => b.toString(16).padStart(2, '0')).join('');
+const hex = a => Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+const newSalt = () => hex(crypto.getRandomValues(new Uint8Array(16)));
+// the code itself is never stored, only a salted PBKDF2 fingerprint of it
+async function hashCode(code, salt) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 120000 }, key, 256);
+  return 'p1:' + hex(new Uint8Array(bits));
+}
+function attachAccount(key, d, hash) {
+  if (ACC.unsub) { try { ACC.unsub(); } catch (e) {} }
+  ACC.key = key; ACC.name = cleanNick(d.name) || 'שחקן'; ACC.hash = hash; ACC.local = false;
+  ACC.ref = ACC.db.doc('players/' + key);
+  const prevEquip = JSON.stringify(W$.data.equip);
+  W$.data = cleanWallet(d); store.set('wallet', W$.data);
+  store.set('acct', { key, name: ACC.name, hash });
+  if (JSON.stringify(W$.data.equip) !== prevEquip) applySkin();
+  ACC.unsub = ACC.ref.onSnapshot(snap => {
+    if (!snap.exists || ACC.key !== key) return;
+    const v = snap.data();
+    if (v.hash !== ACC.hash) { logout('הקוד של החשבון שונה במכשיר אחר. היכנס שוב עם הקוד החדש.'); return; }
+    const pe = JSON.stringify(W$.data.equip);
+    W$.data = cleanWallet(v); store.set('wallet', W$.data);
+    if (JSON.stringify(W$.data.equip) !== pe) applySkin();
+    refreshWalletUI();
+  }, () => {});
+  refreshWalletUI(); refreshAccountUI();
+}
+function useLocalAccount(name) { ACC.local = true; ACC.name = name; ACC.ref = null; store.set('acct', { local: true, name }); refreshAccountUI(); }
+function logout(msg) {
+  if (ACC.unsub) { try { ACC.unsub(); } catch (e) {} }
+  Object.assign(ACC, { ref: null, unsub: null, key: null, name: '', hash: null, local: false });
+  store.set('acct', null);
+  W$.data = cleanWallet({ coins: START_COINS }); store.set('wallet', W$.data); applySkin();
+  leaveOnline();
+  if (G.mode) { G.mode = null; G.phase = 'idle'; G.showStriker = false; G.token++; G.simB = null; updateHud(); setCoach('', ''); }
+  showWelcome('login', msg);
+}
+async function createAccount(name, code) {
+  const db = await ACC.ready;
+  if (!db) { useLocalAccount(name); return null; }
+  const key = nameKey(name), ref = db.doc('players/' + key);
+  try {
+    const lease = await ref.acquire({ holder: 'new-' + newSalt(), ttlMs: 8000 });
+    if (!lease.acquired) return 'מישהו בדיוק תופס את השם הזה. נסה שוב בעוד רגע.';
+    const snap = await ref.get();
+    if (snap.exists && snap.data().name) return `שם המשתמש "${name}" כבר תפוס. בחר שם אחר, או לחץ "יש לי חשבון".`;
+    const salt = newSalt(), hash = await hashCode(code, salt);
+    // the first account made on this phone keeps what was won and bought here so far
+    const start = store.get('inherited', false) ? cleanWallet({ coins: START_COINS }) : W$.data;
+    const body = { v: 1, name, salt, hash, created: Date.now(), coins: start.coins, owned: start.owned.slice(), equip: Object.assign({}, start.equip), wins: start.wins, games: start.games, t: Date.now() };
+    await ref.set(body);
+    store.set('inherited', true);
+    attachAccount(key, body, hash);
+    return null;
+  } catch (e) { return IN_CLAUDE ? 'לא הצלחנו לשמור את החשבון. ייתכן שיש לך רק הרשאת צפייה במשחק — בקש מהבעלים לשתף אותך עם הרשאה לשחק.' : 'לא הצלחנו לשמור את החשבון. בדוק את החיבור לאינטרנט ונסה שוב.'; }
+}
+async function loginAccount(name, code) {
+  const db = await ACC.ready;
+  if (!db) return 'אין חיבור לאינטרנט כרגע. נסה שוב.';
+  try {
+    const key = nameKey(name), snap = await db.doc('players/' + key).get();
+    if (!snap.exists || !snap.data().name) return `לא מצאתי משתמש בשם "${name}".`;
+    const d = snap.data(), hash = await hashCode(code, String(d.salt || ''));
+    if (hash !== d.hash) return 'הקוד לא נכון.';
+    attachAccount(key, d, hash);
+    return null;
+  } catch (e) { return 'אין חיבור כרגע. נסה שוב.'; }
+}
+async function changeCode(oldCode, newCode) {
+  if (!ACC.ref) return 'אין חשבון מחובר.';
+  try {
+    const snap = await ACC.ref.get(), d = snap.data() || {};
+    if ((await hashCode(oldCode, String(d.salt || ''))) !== d.hash) return 'הקוד הנוכחי לא נכון.';
+    const salt = newSalt(), hash = await hashCode(newCode, salt);
+    ACC.hash = hash; store.set('acct', { key: ACC.key, name: ACC.name, hash });
+    await ACC.ref.update({ salt, hash });
+    return null;
+  } catch (e) { return 'לא הצלחנו לשמור. נסה שוב.'; }
+}
+async function bootAccount() {
+  const saved = store.get('acct', null), db = await ACC.ready;
+  if (saved && saved.key && saved.hash && db) {
+    try {
+      const snap = await db.doc('players/' + saved.key).get();
+      if (snap.exists && snap.data().hash === saved.hash) { attachAccount(saved.key, snap.data(), saved.hash); showHome(); return; }
+      if (snap.exists) { showWelcome('login', 'הקוד של החשבון שונה. היכנס שוב.', saved.name); return; }
+    } catch (e) { ACC.name = cleanNick(saved.name); showHome(); return; }
+  }
+  if (saved && saved.local && saved.name && !db) { useLocalAccount(cleanNick(saved.name)); showHome(); return; }
+  showWelcome('new', '', saved && saved.name);
+}
+// everyone puts the stake in; the winning side splits the pot (each winner gets 2× the stake)
+function placeBet(stake) {
+  G.bet = null;
+  if (!stake || W$.data.coins < stake) return false;
+  changeCoins(-stake);
+  G.bet = { stake, share: 2 * stake, gid: G.st.gid, paid: false, won: false };
+  return true;
+}
+function settleBet() {
+  const b = G.bet, st = G.st;
+  if (!b || b.paid || b.gid !== st.gid || st.winner === null) return;
+  b.paid = true; b.won = st.winner === G.myTeam;
+  W$.data.games += 1;
+  if (b.won) { W$.data.wins += 1; W$.data.coins += b.share; }
+  saveWallet();
+}
+
+/* ---------------- online (claude.ai room) ---------------- */
+const NET = { room: null, named: null, isHost: false, myPeer: null, hostPeer: null, hp: null, code: '', fmt: '1v1',
+  seats: [null, null, null, null], names: ['', '', '', ''], started: false, presence: {}, joinTimer: 0 };
+NET.ready = (async () => {
+  try {
+    if (IN_CLAUDE) NET.room = await window.claude.use('room');
+    else NET.room = { join: mqJoin };
+  } catch (e) { NET.room = null; }
+  return NET.room;
+})();
+NET.pres = patch => { if (!NET.named) return; NET.named.presence(patch).catch(() => {}); };
+const cleanNick = s => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f​-‏‪-‮⁦-⁩]/g, '').trim().slice(0, 14) : '';
+const myNick = () => cleanNick(ACC.name) || 'שחקן';
+const seatOrder = fmt => fmt === '2v2' ? [0, 1, 2, 3] : [0, 2];
+function genCode() { const A = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 4; i++) s += A[Math.floor(Math.random() * A.length)]; return s; }
+function leaveOnline() {
+  if (NET.named) { try { NET.named.leave(); } catch (e) {} }
+  clearTimeout(NET.joinTimer);
+  Object.assign(NET, { named: null, isHost: false, myPeer: null, hostPeer: null, hp: null, code: '', started: false, seats: [null, null, null, null], names: ['', '', '', ''] });
+  if (G.mode === 'online') { G.mode = null; G.phase = 'idle'; G.showStriker = false; G.token++; G.simB = null; updateHud(); setCoach('', ''); }
+}
+function onPeers(ch) {
+  const me = ch.peers.find(p => p.sameTab); if (me) NET.myPeer = me.peer;
+  if (NET.isHost) hostOnPeers(ch.peers); else guestOnPeers(ch.peers);
+}
+function hostNames(peers) {
+  return NET.seats.map(v => {
+    if (!v) return ''; if (v === 'ai') return 'מחשב'; if (v === NET.myPeer) return myNick();
+    const p = peers.find(q => q.peer === v); return cleanNick(p && p.presence && p.presence.nick) || 'שחקן';
+  });
+}
+function hostOnPeers(peers) {
+  if (!NET.myPeer) return;
+  const before = JSON.stringify([NET.seats, NET.names]);
+  NET.seats[0] = NET.myPeer;
+  const present = new Set(peers.map(p => p.peer));
+  for (let s = 1; s < 4; s++) {
+    const v = NET.seats[s];
+    if (v && v !== 'ai' && !present.has(v)) {
+      if (NET.started) toast(`${NET.names[s] || 'שחקן'} יצא — המחשב ממשיך במקומו`);
+      NET.seats[s] = NET.started ? 'ai' : null;
+    }
+  }
+  if (!NET.started) {
+    const order = NET.fmt === '2v2' ? [2, 1, 3] : [2];
+    for (const p of peers) {
+      if (p.sameTab || !p.presence || p.presence.app !== 'carrom' || p.presence.role !== 'guest' || NET.seats.includes(p.peer)) continue;
+      const free = order.find(s => !NET.seats[s]); if (free !== undefined) NET.seats[free] = p.peer;
+    }
+  }
+  NET.names = hostNames(peers);
+  if (JSON.stringify([NET.seats, NET.names]) !== before) NET.pres({ seats: NET.seats.slice(), names: NET.names.slice() });
+  if (NET.started && G.mode === 'online') applySeats(false); else if (sheetView === 'lobby') showLobby();
+  checkRemote();
+}
+function validGame(g) {
+  if (!g || typeof g !== 'object' || !Array.isArray(g.coins) || g.coins.length !== 19 || !Array.isArray(g.seats)) return false;
+  if (g.fmt !== '1v1' && g.fmt !== '2v2') return false;
+  if (!g.seats.every(s => Number.isInteger(s) && s >= 0 && s < 4) || !Number.isInteger(g.turn) || g.turn < 0 || g.turn >= g.seats.length) return false;
+  if (!Number.isInteger(g.shotNo) || !g.coins.every(c => c === null || (Array.isArray(c) && c.length === 2 && c.every(Number.isFinite)))) return false;
+  if (g.colors != null && !(Array.isArray(g.colors) && g.colors.length === 2 && g.colors.every(c => c === 'w' || c === 'b'))) return false;
+  if (g.queen != null && !(typeof g.queen === 'object' && (g.queen.by === 0 || g.queen.by === 1))) return false;
+  return true;
+}
+function guestOnPeers(peers) {
+  const host = peers.find(p => !p.sameTab && p.presence && p.presence.app === 'carrom' && p.presence.role === 'host');
+  if (!host) { if (NET.hostPeer) hostGone(); return; }
+  NET.hostPeer = host.peer; clearTimeout(NET.joinTimer);
+  const hp = host.presence; NET.hp = hp;
+  NET.fmt = hp.fmt === '2v2' ? '2v2' : '1v1';
+  NET.seats = Array.isArray(hp.seats) ? hp.seats.slice(0, 4).map(v => typeof v === 'string' ? v : null) : [null, null, null, null];
+  NET.names = Array.isArray(hp.names) ? hp.names.slice(0, 4).map(cleanNick) : ['', '', '', ''];
+  if (hp.started && validGame(hp.game)) {
+    if (G.mode !== 'online') {
+      if (NET.seats.indexOf(NET.myPeer) < 0) { if (sheetView === 'lobby') { leaveOnline(); showMessage('החדר מלא', 'המשחק בחדר הזה כבר התחיל בלי מקום פנוי.'); } return; }
+      startOnline();
+    } else { applySeats(false); syncFromHost(); }
+  } else if (sheetView === 'lobby') showLobby();
+  checkRemote();
+}
+function hostGone() {
+  const inGame = G.mode === 'online';
+  leaveOnline();
+  showMessage('המארח יצא', inGame ? 'המשחק נעצר כי מי שפתח את החדר יצא ממנו.' : 'החדר נסגר.');
+}
+function canAffordOnline() {
+  if (W$.data.coins >= ONLINE_STAKE) return true;
+  toast(`צריך ${ONLINE_STAKE} מטבעות כדי לשחק אונליין — אפשר לקבל מתנה במסך "נגד המחשב"`);
+  return false;
+}
+async function hostCreate(fmt) {
+  const room = await NET.ready; if (!room || !canAffordOnline()) return;
+  leaveOnline();
+  const code = genCode(); let named;
+  try { named = await room.join('carrom-' + code); } catch (e) { toast('לא הצלחנו לפתוח חדר — נסה שוב'); return; }
+  Object.assign(NET, { named, isHost: true, code, fmt, started: false, seats: [null, null, null, null], names: ['', '', '', ''] });
+  named.onPeers(onPeers, () => { if (NET.named === named) hostGone(); });
+  NET.pres({ app: 'carrom', role: 'host', nick: myNick(), fmt, seats: NET.seats, names: NET.names, started: false, game: null, shot: null, aim: null });
+  showLobby();
+}
+async function guestJoin(code) {
+  const room = await NET.ready; if (!room || !canAffordOnline()) return;
+  code = (code || '').trim().toLowerCase();
+  if (!/^[a-z0-9]{4}$/.test(code)) { toast('הקוד הוא 4 תווים'); return; }
+  leaveOnline();
+  let named;
+  try { named = await room.join('carrom-' + code); } catch (e) { toast('לא הצלחנו להתחבר — נסה שוב'); return; }
+  Object.assign(NET, { named, isHost: false, code });
+  named.onPeers(onPeers, () => { if (NET.named === named) hostGone(); });
+  NET.pres({ app: 'carrom', role: 'guest', nick: myNick(), shot: null, aim: null });
+  showLobby();
+  NET.joinTimer = setTimeout(() => { if (!NET.hostPeer && NET.named === named) { leaveOnline(); showMessage('לא מצאנו את החדר', `אין כרגע חדר פתוח עם הקוד ${code.toUpperCase()}. בדקו את הקוד ושהמארח עדיין בחדר.`); } }, 7000);
+}
+function startOnline() {
+  G.mode = 'online';
+  if (NET.isHost) {
+    for (const s of seatOrder(NET.fmt)) if (!NET.seats[s]) NET.seats[s] = 'ai';
+    NET.names = hostNames(NET.named.peers());
+    NET.started = true; G.st = newState(NET.fmt);
+    NET.pres({ seats: NET.seats.slice(), names: NET.names.slice(), started: true, game: G.st, shot: null });
+  } else G.st = JSON.parse(JSON.stringify(NET.hp.game));
+  const me = NET.seats.indexOf(NET.myPeer);
+  G.myTeam = teamOf(G.st, me); G.viewSeat = me; G.viewAngle = me * Math.PI / 2; G.rot = null; G.fx = []; G.level = 'medium';
+  G.settings = { mode: 'online' };
+  placeBet(ONLINE_STAKE);
+  applySeats(true); closeSheet(); beginTurn();
+}
+function applySeats(initial) {
+  const prev = G.ctrl.slice();
+  for (let s = 0; s < 4; s++) {
+    const v = NET.seats[s];
+    G.ctrl[s] = v === NET.myPeer ? 'human' : v === 'ai' ? (NET.isHost ? 'ai' : 'remote') : 'remote';
+    G.names[s] = v === NET.myPeer ? 'אתה' : v === 'ai' ? 'מחשב' : (NET.names[s] || 'שחקן');
+  }
+  setTeamNames(); updateHud();
+  if (!initial) {
+    const seat = curSeat(G.st);
+    if (prev[seat] !== G.ctrl[seat] && (G.phase === 'remote' || G.phase === 'ai')) beginTurn();
+  }
+}
+function checkRemote() {
+  if (G.mode !== 'online' || !NET.named || G.phase !== 'remote') return;
+  const st = G.st, seat = curSeat(st);
+  const src = NET.seats[seat] === 'ai' ? NET.hostPeer || (NET.isHost ? NET.myPeer : null) : NET.seats[seat];
+  const p = NET.named.peers().find(q => q.peer === src); if (!p || !p.presence) return;
+  const s = p.presence.shot;
+  if (s && s.n === st.shotNo && s.g === st.gid && s.seat === seat && [s.x, s.y, s.vx, s.vy].every(Number.isFinite)) { fire(s, false); return; }
+  const a = p.presence.aim;
+  if (a && a.n === st.shotNo && a.g === st.gid && Number.isFinite(a.x)) G.strikerTarget = clamp(a.x, -BASE_X, BASE_X);
+}
+function syncFromHost() {
+  const hp = NET.hp; if (!hp || !validGame(hp.game) || G.mode !== 'online') return;
+  const g = hp.game, newGame = g.gid !== G.st.gid;
+  if (!newGame && g.shotNo <= G.st.shotNo) return;
+  if (G.phase === 'sim' && !newGame) return;
+  G.st = JSON.parse(JSON.stringify(g)); G.simB = null; G.fx = [];
+  if (newGame) { if (sheetView === 'over') closeSheet(); placeBet(ONLINE_STAKE); }
+  else toast(G.st.msg);
+  beginTurn();
+}
+
+/* ---------------- menus ---------------- */
+function el(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in (props || {})) {
+    const v = props[k];
+    if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v === true) e.setAttribute(k, ''); else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) { if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(c)); }
+  return e;
+}
+function btn(title, sub, on, cls) { return el('button', { class: 'btn ' + (cls || ''), type: 'button', onclick: on }, title, sub ? el('small', { text: sub }) : null); }
+function seg(id, opts, value, onChange) {
+  const box = el('div', { class: 'seg', role: 'group', id });
+  for (const [v, label] of opts) {
+    const b = el('button', { type: 'button', 'aria-pressed': String(v === value), text: label, onclick: () => {
+      box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); onChange(v);
+    } });
+    box.append(b);
+  }
+  return box;
+}
+function openSheet(view, ...kids) { sheetView = view; $('panel').replaceChildren(...kids.filter(Boolean)); $('sheet').hidden = false; sheetOpen = true; $('panel').scrollTop = 0; }
+function closeSheet() { $('sheet').hidden = true; sheetOpen = false; sheetView = ''; }
+function soundRow() {
+  return btn(G.muted ? 'צלילים: כבויים' : 'צלילים: פועלים', '', () => { G.muted = !G.muted; store.set('muted', G.muted); ensureAudio(); showHome(); }, 'quiet');
+}
+function showHome() {
+  const inGame = G.mode && G.st.winner === null;
+  openSheet('home',
+    el('h1', { text: 'קארום' }),
+    el('p', { class: 'lead', text: 'לוח העץ ההודי. ממקמים את הסטרייקר במסילה שמתחת ללוח, ואז מעיפים אותו על הלוח באצבע — ככל שהתנופה חזקה יותר, המכה חזקה יותר.' }),
+    el('div', { class: 'acctrow' },
+      el('button', { class: 'acctbtn', type: 'button', onclick: showAccount, 'aria-label': 'החשבון שלי' },
+        el('span', { class: 'avatar', text: (ACC.name || '?').slice(0, 1) }), el('span', { class: 'acct-name', text: ACC.name })),
+      walletPill()),
+    inGame ? btn('המשך משחק', '', closeSheet, 'primary') : null,
+    btn('נגד המחשב', 'קל, בינוני או קשה · משחקים על מטבעות', showAI),
+    btn('שניים או ארבעה על טלפון אחד', 'מעבירים את הטלפון · הלוח מסתובב אל מי שבתור', showLocal),
+    btn('אונליין עם חברים', 'חדר עם קוד · 1 על 1 או 2 על 2 · 100 מטבעות', showOnline),
+    btn('חנות סקינים', 'לוחות, דיסקיות וסטרייקרים', showShop),
+    btn('איך משחקים', '', showRules),
+    !IN_CLAUDE && !INSTALL.installed ? btn('התקן אפליקציה', 'אייקון במסך הבית · נפתח במסך מלא', installApp) : null,
+    G.mode === 'online' ? btn('צא מהחדר', '', () => { leaveOnline(); showHome(); }, 'quiet') : null,
+    soundRow()
+  );
+}
+function showAI() {
+  let level = store.get('level', 'medium'), fmt = store.get('aiFmt', '1v1');
+  const stakeNote = el('p', { class: 'bet win' });
+  const start = btn('התחל', '', () => startLocalGame('ai', fmt, level), 'primary');
+  const gift = btn(`קבל ${GIFT} מטבעות מתנה`, 'כשנגמרים המטבעות', () => { changeCoins(GIFT); showAI(); }, 'small');
+  const refresh = () => {
+    const s = STAKE[level];
+    stakeNote.textContent = `כניסה: ${s} מטבעות · מנצחים ולוקחים ${2 * s}`;
+    start.disabled = W$.data.coins < s;
+    gift.hidden = W$.data.coins >= STAKE.easy;
+  };
+  openSheet('ai',
+    el('h2', { text: 'נגד המחשב' }),
+    walletPill(),
+    el('p', { class: 'label', text: 'רמה' }),
+    seg('lvl', [['easy', 'קל'], ['medium', 'בינוני'], ['hard', 'קשה']], level, v => { level = v; store.set('level', v); refresh(); }),
+    el('p', { class: 'label', text: 'מצב' }),
+    seg('fmt', [['1v1', '1 על 1'], ['2v2', '2 על 2']], fmt, v => { fmt = v; store.set('aiFmt', v); }),
+    el('p', { class: 'note', text: 'הצבע שלך נקבע לפי האסימון הראשון שנכנס. ב-2 על 2 השותף שלך (מחשב) יושב מולך.' }),
+    stakeNote, start, gift,
+    btn('חזרה', '', showHome, 'quiet')
+  );
+  refresh();
+}
+function showLocal() {
+  let fmt = store.get('localFmt', '1v1');
+  openSheet('local',
+    el('h2', { text: 'טלפון אחד' }),
+    el('p', { class: 'label', text: 'מצב' }),
+    seg('lfmt', [['1v1', '2 שחקנים'], ['2v2', '4 שחקנים · 2 על 2']], fmt, v => { fmt = v; store.set('localFmt', v); }),
+    el('p', { class: 'note', text: 'הניחו את הטלפון באמצע. בכל תור הלוח מסתובב כך שהקו של מי שבתור יהיה למטה. על טלפון אחד משחקים בלי מטבעות.' }),
+    btn('התחל', '', () => startLocalGame('local', fmt), 'primary'),
+    btn('חזרה', '', showHome, 'quiet')
+  );
+}
+async function showOnline() {
+  openSheet('online', el('h2', { text: 'אונליין' }), el('p', { class: 'note', text: 'מתחבר…' }));
+  const room = await NET.ready;
+  if (sheetView !== 'online') return;
+  if (!room) {
+    openSheet('online', el('h2', { text: 'אונליין' }),
+      el('p', { class: 'lead', text: IN_CLAUDE ? 'משחק אונליין עובד כשהמשחק פתוח בתוך claude.ai עם חשבון מחובר. כדי ששחקנים נוספים יוכלו להיכנס, שתפו איתם את המשחק דרך כפתור השיתוף.' : 'אין כרגע חיבור לשרת המשחק. בדוק את האינטרנט ונסה שוב.' }),
+      btn('חזרה', '', showHome, 'quiet'));
+    return;
+  }
+  let fmt = store.get('onFmt', '1v1');
+  const code = el('input', { type: 'text', id: 'code', class: 'codein', maxlength: '4', placeholder: 'קוד', autocomplete: 'off', autocapitalize: 'characters', spellcheck: 'false' });
+  openSheet('online',
+    el('h2', { text: 'אונליין' }),
+    el('p', { class: 'note', text: `חברים יראו אותך בשם ${myNick()}.` }),
+    el('p', { class: 'label', text: 'פתח חדר חדש' }),
+    seg('ofmt', [['1v1', '1 על 1'], ['2v2', '2 על 2']], fmt, v => { fmt = v; store.set('onFmt', v); }),
+    btn('צור חדר', '', () => hostCreate(fmt), 'primary'),
+    el('div', { class: 'divider', text: 'או' }),
+    el('p', { class: 'label', text: 'הצטרף עם קוד' }), code,
+    btn('הצטרף', '', () => guestJoin(code.value)),
+    el('p', { class: 'bet win', text: `כל שחקן שם ${ONLINE_STAKE} מטבעות, והמנצחים לוקחים הכל.` }),
+    el('p', { class: 'note', text: IN_CLAUDE ? 'החברים צריכים לפתוח את אותו משחק ב-claude.ai (שתפו אותו איתם דרך כפתור השיתוף).' : `החברים פותחים את ${APP_URL.replace('https://', '')} ונכנסים עם קוד החדר.` }),
+    btn('חזרה', '', showHome, 'quiet')
+  );
+}
+function showLobby() {
+  const order = seatOrder(NET.fmt), list = el('div', { class: 'seats' });
+  for (const s of order) {
+    const v = NET.seats[s], T = NET.fmt === '2v2' ? s % 2 : (s === 0 ? 0 : 1);
+    const name = !v ? el('span', { class: 'empty', text: NET.isHost || NET.hostPeer ? 'ממתין לשחקן…' : '…' })
+      : el('span', { text: v === NET.myPeer ? `${NET.names[s] || myNick()} (אתה)` : (NET.names[s] || 'שחקן') });
+    list.append(el('div', { class: 'seat' }, el('span', { class: 'chip ' + (T ? 'b' : 'w') }), name));
+  }
+  const humans = order.filter(s => NET.seats[s] && NET.seats[s] !== 'ai').length;
+  const start = NET.isHost ? btn('התחל משחק', '', startOnline, 'primary') : null;
+  if (start) start.disabled = humans < 2;
+  openSheet('lobby',
+    el('p', { class: 'label', text: 'קוד החדר' }),
+    el('div', { class: 'code', text: NET.code.toUpperCase() }),
+    el('p', { class: 'note', text: NET.isHost ? 'שלחו את הקוד לחברים: אונליין ← הצטרף עם קוד.' : (NET.hostPeer ? 'אתה בחדר. ממתינים שהמארח יתחיל.' : 'מחפש את החדר…') }),
+    list,
+    NET.isHost ? el('p', { class: 'note', text: NET.fmt === '2v2' ? 'השותף שלך יושב מולך. מקומות ריקים יתמלאו במחשב.' : 'אפשר להתחיל כשעוד שחקן נכנס.' }) : null,
+    start,
+    btn('צא מהחדר', '', () => { leaveOnline(); showOnline(); }, 'quiet')
+  );
+}
+function showRules() {
+  const li = (...k) => el('li', null, ...k);
+  openSheet('rules',
+    el('h2', { text: 'איך משחקים' }),
+    el('ul', { class: 'rules' },
+      li(el('b', { text: 'מיקום: ' }), 'בתחילת התור מזיזים את הסטרייקר במסילה שמתחת ללוח. ימינה ושמאלה במסילה = ימינה ושמאלה על הקו שלך.'),
+      li(el('b', { text: 'מכה: ' }), 'על הלוח עצמו שמים אצבע על הסטרייקר ומחליקים בתנופה לכיוון שרוצים. מהירות האצבע = עוצמת המכה. אין חץ — מכוונים לבד. נגיעה על הלוח לא מזיזה את הסטרייקר.'),
+      li(el('b', { text: 'הצבע שלך: ' }), 'לא בוחרים מראש. מי שמכניס ראשון אסימון — הצבע של האסימון הזה הוא הצבע שלו עד סוף המשחק.'),
+      li('נכנס אסימון שלך? נקודה ועוד תור. אסימון של היריב נספר ליריב.'),
+      li(el('b', { text: 'המלכה האדומה: ' }), 'מותר להכניס אותה בכל רגע. מי שמכניס אותה חייב באותו תור להכניס גם אסימון בצבע שלו (באותה מכה או במכה הבאה). הצליח — +3 נקודות. לא הצליח — המלכה חוזרת למרכז ואין נקודות.'),
+      li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר.'),
+      li(el('b', { text: 'סוף המשחק: ' }), 'כשאחד הצבעים נכנס כולו. מנצח מי שיש לו יותר נקודות (אסימונים + 3 למלכה). בתיקו — מי שסיים את הצבע שלו.'),
+      li(el('b', { text: 'מטבעות: ' }), 'נגד המחשב ובאונליין כל שחקן שם מטבעות בהתחלה, והמנצחים לוקחים הכל. עם המטבעות קונים לוחות בחנות.'),
+      li('ב-2 על 2 השותף יושב מולך, והתור עובר נגד כיוון השעון.')
+    ),
+    btn('חזרה', '', showHome, 'quiet')
+  );
+}
+let confirmBuy = null, shopTab = 'board', confirmLogout = false;
+const SHOP = { board: SKINS, coins: COIN_SETS, striker: STRIKERS };
+function skinPreview(tab, item) {
+  const c = document.createElement('canvas'), px = Math.round(170 * Math.min(2, window.devicePixelRatio || 1));
+  c.width = c.height = px; c.className = 'skinprev';
+  if (tab === 'board') {
+    drawBoard(c, item);
+    const g = c.getContext('2d'), k = px / (2 * (HALF + FRAME)), coins = initialCoins();
+    g.setTransform(k, 0, 0, k, px / 2, px / 2);
+    for (let i = 0; i < 19; i++) { const r = R_C + 2, s = sprites[colorOf(i)]; if (s) g.drawImage(s, coins[i][0] - r, coins[i][1] - r, 2 * r, 2 * r); }
+    if (sprites.s) g.drawImage(sprites.s, -R_S - 2, BASE_Y - R_S - 2, 2 * R_S + 4, 2 * R_S + 4);
+    return c;
+  }
+  // coins and strikers: a close-up on the board you use
+  const g = c.getContext('2d'), sk = skinById(W$.data.equip.board), u = px / 170;
+  const gr = g.createLinearGradient(0, 0, px, px); gr.addColorStop(0, sk.surface[0]); gr.addColorStop(1, sk.surface[1]);
+  g.fillStyle = gr; g.fillRect(0, 0, px, px);
+  const put = (spec, rr, style, x, y, r) => {
+    const f = (rr + 2) / rr, s = renderDisc(spec, rr, Math.ceil(2 * r * f), style);
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.arc(x + 3 * u, y + 4 * u, r, 0, 2 * Math.PI); g.fill();
+    g.drawImage(s, x - r * f, y - r * f, 2 * r * f, 2 * r * f);
+  };
+  if (tab === 'coins') for (const [k, x, y] of [['w', 50, 58], ['b', 120, 58], ['q', 85, 104], ['b', 42, 132], ['w', 128, 132]]) put(item[k], R_C, null, x * u, y * u, 25 * u);
+  else put(item, R_S, item.style, 85 * u, 85 * u, 56 * u);
+  return c;
+}
+function showShop() {
+  const scroll = sheetView === 'shop' ? $('panel').scrollTop : 0;
+  const tab = shopTab, grid = el('div', { class: 'skins' });
+  for (const s of SHOP[tab]) {
+    const owned = W$.data.owned.includes(s.id), using = W$.data.equip[tab] === s.id;
+    let action;
+    if (using) action = el('span', { class: 'tag', text: 'בשימוש' });
+    else if (owned) action = btn('השתמש', '', () => { W$.data.equip[tab] = s.id; saveWallet(); applySkin(); toast(`עכשיו בשימוש: ${s.name}`); }, 'small');
+    else if (confirmBuy === s.id) {
+      action = btn(`לאשר? ${s.price} מטבעות`, '', () => {
+        confirmBuy = null;
+        if (W$.data.coins < s.price) { showShop(); return; }
+        W$.data.coins -= s.price; W$.data.owned.push(s.id); W$.data.equip[tab] = s.id;
+        saveWallet(); applySkin(); toast(`קנית את ${s.name}!`);
+      }, 'small confirm');
+    } else {
+      action = btn(`קנה · ${s.price}`, '', () => { confirmBuy = s.id; showShop(); }, 'small buy');
+      if (W$.data.coins < s.price) { action.disabled = true; action.firstChild.nodeValue = `חסרים ${s.price - W$.data.coins}`; }
+    }
+    grid.append(el('div', { class: 'skin' + (using ? ' using' : '') },
+      skinPreview(tab, s), el('div', { class: 'skname', text: s.name }), el('div', { class: 'skdesc', text: s.desc }), action));
+  }
+  openSheet('shop',
+    el('h2', { text: 'חנות סקינים' }),
+    walletPill(),
+    seg('shoptab', [['board', 'לוחות'], ['coins', 'דיסקיות'], ['striker', 'סטרייקרים']], tab, v => { shopTab = v; confirmBuy = null; showShop(); }),
+    grid,
+    btn('חזרה', '', () => { confirmBuy = null; showHome(); }, 'quiet')
+  );
+  $('panel').scrollTop = scroll;
+}
+function showWelcome(mode, msg, prefill) {
+  const m = mode === 'login' ? 'login' : 'new', online = !!ACC.db;
+  const name = el('input', { type: 'text', id: 'wName', maxlength: '14', autocomplete: 'username', placeholder: 'שם משתמש', value: cleanNick(prefill || '') });
+  const code = el('input', { type: 'password', id: 'wCode', maxlength: '24', autocomplete: m === 'login' ? 'current-password' : 'new-password', placeholder: m === 'login' ? 'הקוד הסודי שלך' : 'קוד סודי (לפחות 4 אותיות או מספרים)' });
+  const err = el('p', { class: 'err', text: msg || '' }); err.hidden = !msg;
+  const label = m === 'login' ? 'כניסה' : 'יאללה, מתחילים!';
+  const go = el('button', { class: 'btn primary', type: 'submit', text: label });
+  const fail = t => { err.textContent = t; err.hidden = false; go.disabled = false; go.textContent = label; };
+  const form = el('form', { class: 'wform', onsubmit: async e => {
+    e.preventDefault();
+    const n = cleanNick(name.value).replace(/\s+/g, ' '), c = code.value;
+    if (n.length < 2) return fail('שם המשתמש צריך לפחות 2 תווים.');
+    if (online && c.length < 4) return fail('הקוד צריך לפחות 4 אותיות או מספרים.');
+    err.hidden = true; go.disabled = true; go.textContent = 'בודק…';
+    const res = m === 'login' ? await loginAccount(n, c) : await createAccount(n, c);
+    if (res) return fail(res);
+    code.value = '';
+    toast(m === 'login' ? `שלום ${ACC.name}!` : `ברוך הבא, ${ACC.name}!`);
+    showHome();
+  } }, name, online ? code : null, err, go);
+  openSheet('welcome',
+    el('h1', { text: 'קארום' }),
+    el('p', { class: 'lead', text: m === 'login' ? 'כתוב את שם המשתמש והקוד הסודי שלך.' : 'בחר שם משתמש וקוד סודי. איתם נכנסים לחשבון — עם המטבעות והסקינים — מכל טלפון.' }),
+    online ? seg('wtab', [['new', 'משתמש חדש'], ['login', 'יש לי חשבון']], m, v => showWelcome(v, '', name.value))
+      : el('p', { class: 'note', text: IN_CLAUDE ? 'המשחק לא פתוח כרגע ב-claude.ai, אז החשבון יישמר רק בטלפון הזה.' : 'אין כרגע חיבור לאינטרנט, אז החשבון יישמר רק בטלפון הזה.' }),
+    form,
+    el('p', { class: 'note', text: 'את הקוד שומרים בסוד. את שם המשתמש חברים רואים באונליין.' })
+  );
+  setTimeout(() => { try { (m === 'login' && name.value ? code : name).focus(); } catch (e) {} }, 60);
+}
+function showAccount() {
+  confirmLogout = false;
+  const d = W$.data, kids = [
+    el('div', { class: 'acctrow' }, el('span', { class: 'avatar big', text: (ACC.name || '?').slice(0, 1) }), el('h2', { class: 'acct-name', text: ACC.name })),
+    walletPill(),
+    el('p', { class: 'note', text: `ניצחונות: ${d.wins} · משחקים על מטבעות: ${d.games} · פריטים בבעלותך: ${d.owned.length}` })
+  ];
+  if (ACC.local) kids.push(el('p', { class: 'note', text: 'החשבון הזה שמור רק בטלפון הזה.' }));
+  else if (ACC.ref) {
+    const oldC = el('input', { type: 'password', id: 'oldCode', autocomplete: 'current-password', placeholder: 'הקוד הנוכחי' });
+    const newC = el('input', { type: 'password', id: 'newCode', autocomplete: 'new-password', placeholder: 'קוד חדש (לפחות 4)' });
+    const msg = el('p', { class: 'err' }); msg.hidden = true;
+    const save = el('button', { class: 'btn small', type: 'submit', text: 'שמור קוד חדש' });
+    const form = el('form', { class: 'wform', onsubmit: async e => {
+      e.preventDefault();
+      if (newC.value.length < 4) { msg.textContent = 'הקוד החדש צריך לפחות 4 אותיות או מספרים.'; msg.hidden = false; return; }
+      save.disabled = true;
+      const res = await changeCode(oldC.value, newC.value);
+      save.disabled = false;
+      if (res) { msg.textContent = res; msg.hidden = false; return; }
+      oldC.value = newC.value = ''; msg.hidden = true; toast('הקוד החדש נשמר');
+    } }, oldC, newC, msg, save);
+    form.hidden = true;
+    const open = btn('שינוי קוד סודי', '', () => { form.hidden = !form.hidden; if (!form.hidden) oldC.focus(); }, 'small');
+    kids.push(open, form);
+  }
+  const out = btn('התנתק', '', () => {
+    if (!confirmLogout) { confirmLogout = true; out.firstChild.nodeValue = 'לחץ שוב כדי להתנתק'; return; }
+    logout('');
+  }, 'quiet');
+  kids.push(out, btn('חזרה', '', showHome, 'quiet'));
+  openSheet('account', ...kids);
+}
+function showMessage(title, text) { openSheet('msg', el('h2', { text: title }), el('p', { class: 'lead', text }), btn('לתפריט', '', showHome, 'primary')); }
+function showGameOver() {
+  const st = G.st, W = st.winner;
+  let title;
+  if (G.mode === 'local') title = `${G.teamNames[W]} ניצחו!`;
+  else if (W === G.myTeam) title = st.fmt === '2v2' ? 'ניצחתם!' : 'ניצחת!';
+  else title = G.mode === 'ai' ? 'המחשב ניצח' : 'הפסדת';
+  const f = st.final || [teamPoints(st, 0), teamPoints(st, 1)];
+  const scoreRow = el('div', { class: 'result' },
+    el('span', null, String(f[0]), el('small', { text: G.teamNames[0] })),
+    el('span', null, ':'),
+    el('span', null, String(f[1]), el('small', { text: G.teamNames[1] })));
+  const b = G.bet && G.bet.gid === st.gid && G.bet.paid ? G.bet : null;
+  const betLine = b ? el('p', { class: 'bet ' + (b.won ? 'win' : 'lose'), text: b.won ? `+${b.share} מטבעות! (הרווחת ${b.share - b.stake})` : `הפסדת ${b.stake} מטבעות` }) : null;
+  const again = () => {
+    if (G.mode === 'online') {
+      if (!NET.isHost) return;
+      G.st = newState(NET.fmt); placeBet(ONLINE_STAKE); NET.pres({ game: G.st, shot: null }); closeSheet(); beginTurn();
+    } else if (G.settings) startLocalGame(G.settings.mode, G.settings.fmt, G.settings.level);
+  };
+  openSheet('over',
+    el('div', { class: 'big', text: title }),
+    scoreRow, betLine, b ? walletPill() : null,
+    G.mode === 'online' && !NET.isHost ? el('p', { class: 'note', text: 'המארח יכול להתחיל משחק חוזר.' }) : btn('משחק חוזר', '', again, 'primary'),
+    btn('לתפריט', '', () => { if (G.mode !== 'online') { G.mode = null; G.phase = 'idle'; G.showStriker = false; updateHud(); setCoach('', ''); } showHome(); }, 'quiet')
+  );
+}
+$('menuBtn').addEventListener('click', () => {
+  ensureAudio();
+  if (sheetView === 'welcome' || sheetView === 'boot') return;
+  if (sheetOpen && G.mode && G.st.winner === null) closeSheet(); else showHome();
+});
+$('sheet').addEventListener('pointerdown', ensureAudio);
+
+/* ---------------- boot ---------------- */
+new ResizeObserver(() => resize()).observe($('stage'));
+resize();
+updateHud();
+openSheet('boot', el('h1', { text: 'קארום' }), el('p', { class: 'note', text: 'טוען…' }));
+bootAccount();
+requestAnimationFrame(t => { last = t; frame(t); });
+})();
+</script>
+
+</body>
+</html>
