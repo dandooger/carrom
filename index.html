@@ -17,14 +17,15 @@ body{margin:0;font-size:14px}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.CARROM_VERSION = "1794084664919";</script>
+<script>window.CARROM_VERSION = "1794143127580";</script>
 <title>קארום</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Suez+One&display=swap">
 <style>
-/* Layout: one-screen game table: score strip on top, the square board fills the rest, a one-line coach under it; menus rise as a sheet over the board */
+/* Layout: landscape game table — score cards in the left column, the square board in the middle, coach + placing rail in the right column;
+   the lobby is a full-screen landscape menu (top bar, stake tables carousel, game modes row); other menus rise as a sheet */
 :root{
   --night:#14213a; --indigo:#1e3158; --indigo-2:#2a416f; --ivory:#f5ecd9; --ivory-dim:#b9b2a3;
   --saffron:#f2a531; --vermilion:#d4462f; --line:rgba(245,236,217,.16);
@@ -38,73 +39,63 @@ body{margin:0;background-color:var(--night);color:var(--ivory);font-family:var(-
   touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
   background-image:radial-gradient(rgba(242,165,49,.07) 1.4px,transparent 1.8px),radial-gradient(ellipse at 50% 40%,rgba(42,65,111,.55),transparent 70%);
   background-size:22px 22px,100% 100%}
-#app{height:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;max-width:760px;margin:0 auto;
-  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.hud{display:flex;gap:8px;align-items:stretch;flex:none}
-.team{flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:14px;background:var(--indigo);
+#app{height:100%;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) var(--bs,320px) minmax(0,1fr);gap:14px;direction:ltr;
+  padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.side{direction:rtl;display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
+.side-a .iconbtn{margin-top:auto;width:52px;height:52px;align-self:flex-start}
+.side-b #placer{margin-top:auto}
+@media (orientation:portrait){
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;max-width:760px;margin:0 auto}
+  .side-a{flex-direction:row;align-items:stretch}
+  .side-a .team{flex:1}
+  .side-a .iconbtn{margin-top:0;height:auto}
+}
+.team{flex:none;min-width:0;display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:14px;background:var(--indigo);
   border:1.5px solid transparent;transition:border-color .25s,background .25s}
 .team.on{border-color:var(--saffron);background:var(--indigo-2)}
 .chip{width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 3px rgba(0,0,0,.14),0 1px 2px rgba(0,0,0,.45)}
 .chip.w{background:radial-gradient(circle at 35% 35%,#fffaf0,#dccaa6)}
 .chip.b{background:radial-gradient(circle at 35% 35%,#5a4b44,#17110f)}
+.chip.n{background:radial-gradient(circle at 35% 35%,#9a968e,#57534d)}
 .tinfo{min-width:0;flex:1;display:flex;flex-direction:column;line-height:1.2}
 .tname{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tsub{font-size:12px;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.2em}
-.chip.n{background:radial-gradient(circle at 35% 35%,#9a968e,#57534d)}
 .tcount{font-family:var(--font-display);font-size:22px;font-variant-numeric:tabular-nums;flex:none;display:flex;align-items:baseline;gap:3px}
 .tcount small{font-family:var(--font-body);font-size:12px;color:var(--ivory-dim)}
-.wallet{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:var(--night);padding:6px 14px 6px 10px;border-radius:999px;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
-.coin{width:18px;height:18px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 35%,#ffe9a8,#e2a92c 60%,#a5711a);box-shadow:inset 0 0 0 2px rgba(120,80,10,.45)}
-.skins{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.skin{background:var(--night);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0;border:1.5px solid transparent}
-.skin.using{border-color:var(--saffron)}
-.skinprev{width:100%;max-width:100%;aspect-ratio:1;border-radius:10px;display:block}
-.skname{font-weight:800;font-size:15px}
-.skdesc{font-size:12px;color:var(--ivory-dim);line-height:1.35;flex:1}
-.btn.small{font-size:14px;padding:9px 8px;align-items:center;text-align:center}
-.btn.buy{background:var(--saffron);color:#2b1a04}
-.btn.confirm{background:var(--vermilion);color:var(--ivory)}
-.tag{font-size:14px;font-weight:800;color:var(--saffron);text-align:center;padding:9px 0}
-.result{display:flex;justify-content:center;gap:18px;font-family:var(--font-display);font-size:30px;font-variant-numeric:tabular-nums}
-.result span{display:flex;flex-direction:column;align-items:center;gap:2px}
-.result small{font-family:var(--font-body);font-size:13px;color:var(--ivory-dim)}
-.bet{font-weight:800;text-align:center;margin:0}
-.bet.win{color:var(--saffron)} .bet.lose{color:var(--ivory-dim)}
 .qdot{width:11px;height:11px;border-radius:50%;background:var(--vermilion);flex:none;box-shadow:0 0 0 2px rgba(212,70,47,.3)}
 .qdot.pending{opacity:.45}
 .iconbtn{flex:none;width:44px;border-radius:14px;background:var(--indigo);border:0;color:var(--ivory);display:grid;place-items:center;cursor:pointer;padding:0}
 .iconbtn:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
-#stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative}
+#stage{position:relative;display:grid;place-items:center;min-width:0;min-height:0}
 #board{display:block;touch-action:none;border-radius:20px;box-shadow:0 20px 44px rgba(0,0,0,.5)}
-#toast{position:absolute;top:12px;left:50%;transform:translate(-50%,-6px);max-width:calc(100% - 40px);box-sizing:border-box;
+#toast{position:absolute;top:12px;left:50%;transform:translate(-50%,-6px);max-width:calc(100% - 40px);box-sizing:border-box;z-index:2;
   background:rgba(20,33,58,.94);border:1px solid var(--line);padding:8px 16px;border-radius:999px;font-weight:700;font-size:14px;text-align:center;
   opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
-#placer{flex:none;align-self:center;max-width:100%;height:54px;position:relative;direction:ltr;touch-action:none;cursor:pointer;transition:opacity .2s}
+#placer{flex:none;width:100%;height:60px;position:relative;direction:ltr;touch-action:none;cursor:pointer;transition:opacity .2s}
 #placer.off{opacity:.35;cursor:default}
 #placer .rail{position:absolute;left:0;right:0;top:50%;height:30px;transform:translateY(-50%);border-radius:15px;
   background:linear-gradient(#5e3119,#3d1d0d);box-shadow:inset 0 2px 4px rgba(0,0,0,.5),0 1px 0 rgba(255,220,180,.12)}
 #placer .rail::before{content:"";position:absolute;left:26px;right:26px;top:50%;height:2px;transform:translateY(-50%);background:rgba(242,165,49,.55);border-radius:1px}
 #placer .end{position:absolute;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#b3302a;box-shadow:0 0 0 2px #2b1b10}
-#placer .thumb{position:absolute;top:50%;left:0;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;will-change:transform;
-  background:radial-gradient(circle at 50% 50%,#1e3158 0 3px,transparent 3.5px),
-    radial-gradient(circle at 50% 50%,transparent 0 9px,#c43d2a 9px 11px,transparent 11.5px),
-    radial-gradient(circle at 50% 50%,transparent 0 15px,#e99b2b 15px 18px,transparent 18.5px),
-    radial-gradient(circle at 36% 32%,#ffffff,#f3ecdc 55%,#d3c39f);
-  box-shadow:0 3px 6px rgba(0,0,0,.45),0 0 0 2px rgba(143,125,90,.6)}
+#placer .thumb{position:absolute;top:50%;left:0;width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;will-change:transform;
+  background:radial-gradient(circle at 36% 32%,#ffffff,#f3ecdc 55%,#d3c39f);box-shadow:0 3px 6px rgba(0,0,0,.45),0 0 0 2px rgba(143,125,90,.6)}
 #placer.bad .thumb{box-shadow:0 3px 6px rgba(0,0,0,.45),0 0 0 3px var(--vermilion)}
 #placer.drag .thumb{box-shadow:0 3px 8px rgba(0,0,0,.5),0 0 0 3px var(--saffron)}
 #placer:focus-visible{outline:2px solid var(--saffron);outline-offset:3px;border-radius:16px}
-#coach{flex:none;min-height:2.9em;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.3;gap:2px}
+#coach{flex:none;display:flex;flex-direction:column;justify-content:center;text-align:center;line-height:1.3;gap:4px;
+  background:var(--indigo);border-radius:14px;padding:10px 12px;min-height:3.2em}
 #coachMain{font-weight:800;font-size:16px;color:var(--saffron)}
 #coachSub{font-size:14px;color:var(--ivory-dim)}
-.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;box-sizing:border-box;
+#coachMain:empty+#coachSub:empty{display:none}
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;box-sizing:border-box;
   background:rgba(9,15,29,.6);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-@media (min-height:680px){.sheet{align-items:center}}
-.panel{width:100%;max-width:420px;max-height:100%;overflow-y:auto;touch-action:pan-y;box-sizing:border-box;background:var(--indigo);
-  border:1px solid var(--line);border-radius:22px;padding:22px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.sheet.full{padding:0;background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.panel{width:100%;max-width:520px;max-height:100%;overflow-y:auto;touch-action:pan-y;box-sizing:border-box;background:var(--indigo);
+  border:1px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
 .panel h1{font-family:var(--font-display);font-weight:400;font-size:46px;line-height:1;margin:0;color:var(--saffron);text-wrap:balance}
 .panel h2{font-family:var(--font-display);font-weight:400;font-size:30px;line-height:1.1;margin:0;text-wrap:balance}
 .lead{margin:0 0 4px;color:var(--ivory-dim);line-height:1.45}
@@ -113,12 +104,29 @@ body{margin:0;background-color:var(--night);color:var(--ivory);font-family:var(-
 .btn small{font-weight:400;font-size:13px;color:var(--ivory-dim)}
 .btn.primary{background:var(--saffron);color:#2b1a04;align-items:center;text-align:center}
 .btn.quiet{background:transparent;color:var(--ivory-dim);align-items:center;text-align:center;font-weight:600;font-size:15px;padding:10px}
+.btn.small{font-size:14px;padding:9px 8px;align-items:center;text-align:center}
+.btn.buy{background:var(--saffron);color:#2b1a04}
+.btn.confirm{background:var(--vermilion);color:var(--ivory)}
 .btn:disabled{opacity:.4;cursor:default}
-.btn:focus-visible,.seg button:focus-visible,input:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible,.arena:focus-visible,.mode:focus-visible,.tb:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
 .label{font-size:12px;letter-spacing:.06em;color:var(--ivory-dim);font-weight:700;margin:4px 0 -4px}
 .seg{display:flex;background:var(--night);border-radius:12px;padding:4px;gap:4px}
 .seg button{flex:1;font:inherit;font-weight:700;font-size:15px;padding:10px 4px;border:0;border-radius:9px;background:transparent;color:var(--ivory-dim);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ivory);color:var(--night)}
+.wallet{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:var(--night);padding:6px 14px 6px 10px;border-radius:999px;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
+.coin{width:18px;height:18px;border-radius:50%;flex:none;background:radial-gradient(circle at 35% 35%,#ffe9a8,#e2a92c 60%,#a5711a);box-shadow:inset 0 0 0 2px rgba(120,80,10,.45)}
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.skin{background:var(--night);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0;border:1.5px solid transparent}
+.skin.using{border-color:var(--saffron)}
+.skinprev{width:100%;max-width:100%;aspect-ratio:1;border-radius:10px;display:block}
+.skname{font-weight:800;font-size:15px}
+.skdesc{font-size:12px;color:var(--ivory-dim);line-height:1.35;flex:1}
+.tag{font-size:14px;font-weight:800;color:var(--saffron);text-align:center;padding:9px 0}
+.result{display:flex;justify-content:center;gap:18px;font-family:var(--font-display);font-size:30px;font-variant-numeric:tabular-nums}
+.result span{display:flex;flex-direction:column;align-items:center;gap:2px}
+.result small{font-family:var(--font-body);font-size:13px;color:var(--ivory-dim)}
+.bet{font-weight:800;text-align:center;margin:0}
+.bet.win{color:var(--saffron)} .bet.lose{color:var(--ivory-dim)}
 .acctrow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .acctrow h2{flex:1;min-width:0;overflow-wrap:anywhere}
 .acctbtn{font:inherit;font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:8px;background:var(--indigo-2);color:var(--ivory);border:0;border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer;max-width:100%}
@@ -138,41 +146,133 @@ input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 1
 .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
 .rules{margin:0;padding-inline-start:20px;display:grid;gap:7px;line-height:1.45}
 .rules b{color:var(--saffron)}
-.big{font-family:var(--font-display);font-size:64px;line-height:1;text-align:center;color:var(--saffron)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.big{font-family:var(--font-display);font-size:56px;line-height:1;text-align:center;color:var(--saffron)}
+/* lobby */
+.panel.lobby{max-width:none;width:100%;height:100%;max-height:none;border:0;border-radius:0;box-shadow:none;overflow:hidden;
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(rgba(255,214,140,.08) 1.4px,transparent 1.8px) 0 0/22px 22px,
+    linear-gradient(180deg,#16244a 0%,#3a2a68 52%,#a1453c 88%,#d9783a 100%)}
+.topbar{display:flex;align-items:center;gap:8px;min-width:0;overflow-x:auto;touch-action:pan-x;scrollbar-width:none}
+.topbar::-webkit-scrollbar{display:none}
+.topbar .wallet{align-self:center;background:rgba(10,16,32,.55)}
+.tb{font:inherit;font-weight:800;font-size:14px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;flex:none;
+  background:rgba(10,16,32,.55);color:var(--ivory);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:7px 14px;cursor:pointer}
+.tb.hot{background:var(--saffron);color:#2b1a04;border-color:transparent}
+.spacer{flex:1}
+.arenas{display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;touch-action:pan-x;padding:2px 4px 6px;align-items:stretch;scrollbar-width:none;direction:rtl}
+.arenas::-webkit-scrollbar{display:none}
+.arena{flex:0 0 clamp(220px,34vw,320px);scroll-snap-align:center;font:inherit;color:#fff;text-align:start;cursor:pointer;border:0;border-radius:20px;
+  padding:14px 16px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;min-height:0;
+  background:radial-gradient(circle at 85% 10%,rgba(255,255,255,.22),transparent 45%),linear-gradient(160deg,var(--a1),var(--a2));
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.18),0 10px 24px rgba(0,0,0,.35)}
+.arena:disabled{cursor:default;filter:saturate(.45) brightness(.8)}
+.aname{font-family:var(--font-display);font-size:clamp(24px,4.2vh + 6px,36px);line-height:1;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.asub{font-size:13px;opacity:.85;margin-top:-2px}
+.aprize{margin-top:auto;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.28);border-radius:12px;padding:8px 12px;font-weight:800;font-size:clamp(17px,3vh + 4px,24px)}
+.aprize .coin{width:22px;height:22px}
+.ameta{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700;flex-wrap:wrap}
+.ameta span{white-space:nowrap}
+.abox{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;opacity:.95}
+.lvl{display:inline-flex;gap:2px;vertical-align:middle}
+.lvl i{width:6px;height:10px;border-radius:2px;background:rgba(255,255,255,.3)}
+.lvl i.on{background:#ffd75e}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.mode{font:inherit;color:#fff;border:0;border-radius:16px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;
+  min-height:58px;text-align:start;background:linear-gradient(160deg,var(--m1),var(--m2));box-shadow:inset 0 -4px 0 rgba(0,0,0,.2),0 6px 14px rgba(0,0,0,.3)}
+.mode b{font-size:16px;font-weight:800;line-height:1.15}
+.mode small{font-size:12px;opacity:.85;line-height:1.2}
+.mode:disabled{filter:grayscale(.7) brightness(.8);cursor:default}
+/* boxes */
+.minibox{width:22px;height:18px;border-radius:4px 4px 5px 5px;flex:none;position:relative;background:linear-gradient(var(--c1),var(--c2));box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.minibox::before{content:"";position:absolute;left:0;right:0;top:6px;height:2px;background:rgba(0,0,0,.3)}
+.minibox::after{content:"";position:absolute;left:50%;top:4px;width:5px;height:6px;margin-left:-2.5px;border-radius:1px;background:#ffe39a}
+.chestwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.chestwrap .chest{margin-top:30px}
+.panel.split{max-width:780px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:center}
+.split .col{display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (orientation:portrait){.panel.split{grid-template-columns:minmax(0,1fr)}}
+@media (max-height:460px){
+  .chestwrap{gap:2px}
+  .chestwrap .chest{margin-top:22px;width:110px;height:92px}
+  .chest .body{height:52px}
+  .chest .lid{height:38px;top:8px}
+  .chest .lock{top:36px;width:20px;height:22px;margin-left:-10px}
+  .boxname{font-size:20px}
+  .reward{padding:6px 10px;min-width:84px;gap:3px}
+  .reward canvas{width:56px;height:56px}
+  .reward .coin{width:22px;height:22px}
+  .panel .big{font-size:42px}
+}
+.chest{position:relative;width:132px;height:112px;cursor:pointer;border:0;background:none;padding:0;font:inherit}
+.chest .glow{position:absolute;left:50%;top:50%;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,232,160,.85),rgba(255,200,90,.2) 45%,transparent 68%);opacity:0;transform:scale(.4);transition:opacity .5s,transform .6s;pointer-events:none}
+.chest .body{position:absolute;bottom:0;left:6px;right:6px;height:64px;border-radius:8px 8px 14px 14px;background:linear-gradient(var(--c1),var(--c2));
+  box-shadow:inset 0 -7px 0 rgba(0,0,0,.25),inset 0 0 0 3px rgba(0,0,0,.18),0 10px 18px rgba(0,0,0,.45)}
+.chest .body::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:18px;margin-left:-9px;background:linear-gradient(#fff1bd,#c9962c)}
+.chest .lid{position:absolute;top:10px;left:0;right:0;height:46px;border-radius:46px 46px 8px 8px;background:linear-gradient(var(--c1),var(--c2));
+  box-shadow:inset 0 5px 0 rgba(255,255,255,.25),inset 0 0 0 3px rgba(0,0,0,.18);transform-origin:20% 100%;transition:transform .55s cubic-bezier(.3,1.6,.5,1)}
+.chest .lid::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:18px;margin-left:-9px;background:linear-gradient(#fff1bd,#c9962c)}
+.chest .lock{position:absolute;left:50%;top:44px;width:24px;height:26px;margin-left:-12px;border-radius:5px;background:linear-gradient(#fff3c4,#d9a52c);box-shadow:0 2px 0 rgba(0,0,0,.3);transition:opacity .3s}
+.chest.shake{animation:shake .6s ease-in-out}
+.chest.open .lid{transform:translate(-8px,-30px) rotate(-24deg)}
+.chest.open .lock{opacity:0}
+.chest.open .glow{opacity:1;transform:scale(1)}
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-7deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(3deg)}}
+.boxname{font-family:var(--font-display);font-size:24px;line-height:1.1;text-align:center}
+.rewards{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;opacity:0;transform:translateY(8px);transition:opacity .4s .25s,transform .4s .25s}
+.rewards.show{opacity:1;transform:none}
+.reward{background:var(--night);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:800;min-width:110px}
+.reward .coin{width:30px;height:30px}
+.reward canvas{width:84px;height:84px;border-radius:10px}
+.reward small{font-weight:600;color:var(--ivory-dim);font-size:12px}
+.missionrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.mtier{display:flex;align-items:center;gap:6px;background:var(--night);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700}
+/* phone held upright: ask to turn it */
+#rotate{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
+  background:var(--night);padding:24px;font-weight:800;font-size:20px}
+#rotate .ph{width:54px;height:94px;border:4px solid var(--ivory);border-radius:12px;position:relative;animation:turn 2.2s ease-in-out infinite}
+#rotate .ph::after{content:"";position:absolute;left:50%;bottom:6px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--ivory)}
+#rotate small{font-weight:600;font-size:14px;color:var(--ivory-dim);max-width:280px}
+@keyframes turn{0%,25%{transform:rotate(0)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+@media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 
 
-<div id="app" dir="rtl">
-  <header class="hud">
+<div id="app">
+  <aside class="side side-a">
     <div class="team" id="team0">
       <span class="chip n" id="t0chip"></span>
       <div class="tinfo"><span class="tname" id="t0name">שחקן 1</span><span class="tsub" id="t0sub"></span></div>
       <span class="qdot" id="t0q" hidden></span>
       <span class="tcount"><span id="t0pts">0</span><small>נק׳</small></span>
     </div>
-    <button class="iconbtn" id="menuBtn" aria-label="תפריט">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-    </button>
     <div class="team" id="team1">
       <span class="chip n" id="t1chip"></span>
       <div class="tinfo"><span class="tname" id="t1name">שחקן 2</span><span class="tsub" id="t1sub"></span></div>
       <span class="qdot" id="t1q" hidden></span>
       <span class="tcount"><span id="t1pts">0</span><small>נק׳</small></span>
     </div>
-  </header>
+    <button class="iconbtn" id="menuBtn" aria-label="תפריט">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </aside>
   <main id="stage">
     <canvas id="board" aria-label="לוח קארום"></canvas>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+  <aside class="side side-b">
+    <footer id="coach"><span id="coachMain"></span><span id="coachSub"></span></footer>
     <div id="placer" class="off" role="slider" tabindex="0" aria-label="מיקום הסטרייקר על הקו" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
       <div class="rail"></div><span class="end" style="left:19px"></span><span class="end" style="right:19px"></span><div class="thumb"></div>
     </div>
-    <div id="toast" role="status" aria-live="polite"></div>
-  </main>
-  <footer id="coach"><span id="coachMain"></span><span id="coachSub"></span></footer>
+  </aside>
 </div>
 <div class="sheet" id="sheet" dir="rtl" hidden><div class="panel" id="panel"></div></div>
+<div id="rotate" dir="rtl"><div class="ph"></div>סובבו את הטלפון לרוחב<small>קארום משחקים כשהטלפון שוכב לרוחב, כמו לוח אמיתי.</small></div>
 
 <script>
 (() => {
@@ -190,7 +290,7 @@ const colorOf = i => i === 0 ? 'q' : i <= 9 ? 'w' : i <= 18 ? 'b' : 's';
 const colorOfTeam = T => T === 0 ? 'w' : 'b';
 const round2 = v => Math.round(v * 100) / 100;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const HOWTO = 'מקם במסילה שמתחת ללוח · על הלוח: החלק את הסטרייקר בתנופה';
+const HOWTO = 'מקם במסילה שמימין · על הלוח: החלק את הסטרייקר בתנופה';
 
 // seat-local -> world: seat 0 bottom, 1 right, 2 top, 3 left (turns go counter-clockwise)
 function rotW(x, y, s) { s = ((s % 4) + 4) % 4; for (let i = 0; i < s; i++) { const t = x; x = y; y = -t; } return [x, y]; }
@@ -386,10 +486,14 @@ function segClear(ax, ay, bx, by, r, coins, skip) {
   }
   return true;
 }
+// computer strength: the richer the table, the better the opponent
 const AI_LEVELS = {
-  easy:   { K: 5,  speeds: [1],          ang: 3.6, spd: .18, sloppy: .4 },
-  medium: { K: 8,  speeds: [1, 1.15],    ang: 2.3, spd: .1,  sloppy: .2 },
-  hard:   { K: 18, speeds: [1, 1.12, .92], ang: .8,  spd: .045, sloppy: 0 }
+  novice:  { K: 3,  speeds: [1],             ang: 5.5, spd: .25, sloppy: .55 },
+  easy:    { K: 5,  speeds: [1],             ang: 3.6, spd: .18, sloppy: .4 },
+  medium:  { K: 8,  speeds: [1, 1.15],       ang: 2.3, spd: .1,  sloppy: .2 },
+  skilled: { K: 12, speeds: [1, 1.12],       ang: 1.5, spd: .07, sloppy: .08 },
+  hard:    { K: 18, speeds: [1, 1.12, .92],  ang: .8,  spd: .045, sloppy: 0 },
+  master:  { K: 24, speeds: [1, 1.12, .92],  ang: .4,  spd: .025, sloppy: 0 }
 };
 function aiPlan(st, level) {
   const L = AI_LEVELS[level] || AI_LEVELS.medium;
@@ -474,6 +578,14 @@ function setTeamNames() {
   G.teamNames = [0, 1].map(T => st.seats.filter(s => teamOf(st, s) === T).map(s => G.names[s] || 'שחקן').join(' + '));
 }
 function updateHud() {
+  if (G.mode === 'mission' && G.mission) {
+    const M = G.mission;
+    $('team0').classList.add('on'); $('team1').classList.remove('on');
+    $('t0name').textContent = 'משימה יומית'; $('t0sub').textContent = `צריך ${M.target} דיסקיות`; $('t0pts').textContent = String(M.got);
+    $('t1name').textContent = 'תורות שנשארו'; $('t1sub').textContent = `מתוך ${M.shots}`; $('t1pts').textContent = String(M.shots - M.used);
+    for (const T of [0, 1]) { const ch = $('t' + T + 'chip'); ch.className = 'chip n'; ch.style.background = ''; $('t' + T + 'q').hidden = true; }
+    return;
+  }
   const st = G.st, active = (G.mode && st.winner === null) ? teamOf(st, curSeat(st)) : -1;
   for (const T of [0, 1]) {
     $('team' + T).classList.toggle('on', active === T);
@@ -517,7 +629,8 @@ function enterPhase(seat) {
   const ctrl = G.ctrl[seat], name = G.names[seat] || 'שחקן', tok = G.token;
   if (ctrl === 'human') {
     G.phase = 'place';
-    setCoach(G.mode === 'local' ? `תור: ${name}` : 'התור שלך', G.placeValid ? HOWTO : 'הסטרייקר נוגע באסימון — הזז אותו');
+    setCoach(G.mode === 'local' ? `תור: ${name}` : G.mode === 'mission' ? `תור ${G.mission.used + 1} מתוך ${G.mission.shots}` : 'התור שלך',
+      G.placeValid ? HOWTO : 'הסטרייקר נוגע באסימון — הזז אותו');
     if (G.mode === 'online') NET.pres({ aim: { n: G.st.shotNo, g: G.st.gid, x: Math.round(G.strikerX) } });
   } else if (ctrl === 'ai') {
     G.phase = 'ai'; setCoach(`${name} חושב…`, '');
@@ -547,6 +660,7 @@ function fire(s, publish) {
   clack(Math.min(sp, 4000));
 }
 function onSettle() {
+  if (G.mode === 'mission') { missionSettle(); return; }
   if (G.mode === 'online' && !NET.isHost) { G.phase = 'waitHost'; setCoach('מסנכרן…', ''); syncFromHost(); return; }
   const st = applyRules(G.st, G.simB, G.simEv);
   G.st = st; G.simB = null; G.phase = 'pause';
@@ -562,9 +676,10 @@ function rotateTo(seat, done) {
   G.rot = { from, to: from + d, t0: performance.now(), dur: reduce ? 1 : 750, seat, done };
 }
 
-function startLocalGame(mode, fmt, level) {
+function startLocalGame(mode, fmt, level, arena) {
+  if (arena && W$.data.coins < arena.fee) { toast(`צריך ${arena.fee} מטבעות לשולחן הזה`); return; }
   leaveOnline();
-  G.mode = mode; G.level = level || 'medium'; G.st = newState(fmt);
+  G.mode = mode; G.level = level || 'medium'; G.st = newState(fmt); G.mission = null;
   if (mode === 'ai') {
     G.ctrl = ['human', 'ai', 'ai', 'ai'];
     G.names = fmt === '2v2' ? ['אתה', 'יריב ימני', 'השותף שלך', 'יריב שמאלי'] : ['אתה', '', 'המחשב', ''];
@@ -573,9 +688,9 @@ function startLocalGame(mode, fmt, level) {
     G.names = fmt === '2v2' ? ['שחקן 1', 'שחקן 2', 'שחקן 3', 'שחקן 4'] : ['שחקן 1', '', 'שחקן 2', ''];
   }
   G.myTeam = 0; G.viewSeat = 0; G.viewAngle = 0; G.rot = null; G.fx = [];
-  G.settings = { mode, fmt, level: G.level };
+  G.settings = { mode, fmt, level: G.level, arena: arena || null };
   G.bet = null;
-  if (mode === 'ai') placeBet(STAKE[G.level] || 100);
+  if (arena) placeBet(arena);
   setTeamNames(); closeSheet(); beginTurn();
 }
 
@@ -731,11 +846,20 @@ function rrect(g, x, y, w, h, r) {
 }
 function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function resize() {
-  const stage = $('stage'), w = stage.clientWidth, h = stage.clientHeight;
-  cssSize = Math.max(200, Math.floor(Math.min(w, h - 64)));
+  // landscape: the board takes the full height, the two side columns share what is left
+  const app = $('app'), cs = getComputedStyle(app);
+  const w = app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const h = app.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  if (w >= h) {
+    cssSize = Math.max(200, Math.floor(Math.min(h, w - 2 * 170 - 28)));
+    app.style.setProperty('--bs', cssSize + 'px');
+  } else {
+    const st = $('stage');
+    cssSize = Math.max(200, Math.floor(Math.min(st.clientWidth, st.clientHeight)));
+  }
   dpr = Math.min(window.devicePixelRatio || 1, 3);
   cv.style.width = cv.style.height = cssSize + 'px';
-  $('placer').style.width = cssSize + 'px'; railShown.x = null;
+  railShown.x = null;
   cv.width = cv.height = Math.round(cssSize * dpr);
   scale = cssSize / (2 * (HALF + FRAME));
   drawBoardImage();
@@ -1194,6 +1318,10 @@ addEventListener('appinstalled', () => { INSTALL.installed = true; if (sheetView
 if (!IN_CLAUDE && 'serviceWorker' in navigator && location.protocol === 'https:') {
   addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+// the installed app stays in landscape, like the game is meant to be held
+addEventListener('pointerdown', () => {
+  try { if (INSTALL.installed && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+}, { once: true });
 async function installApp() {
   if (INSTALL.deferred) {
     const d = INSTALL.deferred; INSTALL.deferred = null;
@@ -1212,7 +1340,8 @@ async function installApp() {
 }
 
 /* ---------------- wallet + player account (username and secret code, like Cheetah) ---------------- */
-const START_COINS = 300, STAKE = { easy: 50, medium: 100, hard: 200 }, ONLINE_STAKE = 100, GIFT = 100;
+const START_COINS = 300, DAILY_BONUS = 150;
+const ONLINE_TABLE = { fee: 100, prize: 200, box: 'blue' };
 const FREE_ITEMS = ['classic', 'c-classic', 's-classic'];
 function cleanWallet(d) {
   const o = d && typeof d === 'object' ? d : {};
@@ -1225,7 +1354,10 @@ function cleanWallet(d) {
   return {
     coins, owned,
     equip: { board: pick(e.board, pick(o.skin, 'classic')), coins: pick(e.coins, 'c-classic'), striker: pick(e.striker, 's-classic') },
-    wins: Number.isFinite(o.wins) ? Math.max(0, Math.floor(o.wins)) : 0, games: Number.isFinite(o.games) ? Math.max(0, Math.floor(o.games)) : 0
+    wins: Number.isFinite(o.wins) ? Math.max(0, Math.floor(o.wins)) : 0, games: Number.isFinite(o.games) ? Math.max(0, Math.floor(o.games)) : 0,
+    daily: typeof o.daily === 'string' ? o.daily : null,
+    mission: o.mission && typeof o.mission === 'object' && typeof o.mission.day === 'string'
+      ? { day: o.mission.day, got: Number.isFinite(o.mission.got) ? o.mission.got : 0, done: !!o.mission.done } : null
   };
 }
 const W$ = { data: cleanWallet(store.get('wallet', null)), chain: Promise.resolve() };
@@ -1239,7 +1371,8 @@ ACC.ready = (async () => {
 })();
 function walletBody() {
   const d = W$.data;
-  return { coins: d.coins, owned: d.owned.slice(), equip: Object.assign({}, d.equip), wins: d.wins, games: d.games, t: Date.now() };
+  return { coins: d.coins, owned: d.owned.slice(), equip: Object.assign({}, d.equip), wins: d.wins, games: d.games,
+    daily: d.daily, mission: d.mission ? Object.assign({}, d.mission) : null, t: Date.now() };
 }
 function saveWallet() {
   store.set('wallet', W$.data);
@@ -1349,11 +1482,12 @@ async function bootAccount() {
   showWelcome('new', '', saved && saved.name);
 }
 // everyone puts the stake in; the winning side splits the pot (each winner gets 2× the stake)
-function placeBet(stake) {
+// a table: you pay `fee` to sit down; win and you take `prize` plus a box
+function placeBet(table) {
   G.bet = null;
-  if (!stake || W$.data.coins < stake) return false;
-  changeCoins(-stake);
-  G.bet = { stake, share: 2 * stake, gid: G.st.gid, paid: false, won: false };
+  if (!table || W$.data.coins < table.fee) return false;
+  changeCoins(-table.fee);
+  G.bet = { stake: table.fee, share: table.prize, box: table.box, gid: G.st.gid, paid: false, won: false, reward: null };
   return true;
 }
 function settleBet() {
@@ -1362,7 +1496,114 @@ function settleBet() {
   b.paid = true; b.won = st.winner === G.myTeam;
   W$.data.games += 1;
   if (b.won) { W$.data.wins += 1; W$.data.coins += b.share; }
+  if (b.won && b.box) b.reward = grantBox(b.box); else saveWallet();
+}
+
+/* ---------------- stake tables, boxes, daily bonus and daily mission ---------------- */
+const ARENAS = [
+  { id: 'delhi',    name: 'דלהי',          sub: 'שוק צ׳נדני צ׳וק',  fee: 50,   prize: 100,  level: 'novice',  stars: 1, box: 'green',  a: ['#35b56a', '#155f37'] },
+  { id: 'mumbai',   name: 'מומבאי',        sub: 'טיילת מרין דרייב',  fee: 100,  prize: 200,  level: 'easy',    stars: 2, box: 'green',  a: ['#2f86e0', '#173f8a'] },
+  { id: 'jaipur',   name: 'ג׳ייפור',       sub: 'העיר הוורודה',      fee: 250,  prize: 500,  level: 'medium',  stars: 3, box: 'blue',   a: ['#e4588a', '#8c1c4a'] },
+  { id: 'goa',      name: 'גואה',          sub: 'מועדון החוף',       fee: 500,  prize: 1000, level: 'skilled', stars: 4, box: 'purple', a: ['#f2902e', '#9a4508'] },
+  { id: 'kolkata',  name: 'קולקטה',        sub: 'אולם האלופים',      fee: 1000, prize: 2000, level: 'hard',    stars: 5, box: 'gold',   a: ['#8048d8', '#36137a'] },
+  { id: 'maharaja', name: 'ארמון המהרג׳ה', sub: 'רק לאלופים',        fee: 2500, prize: 5000, level: 'master',  stars: 6, box: 'gold',   a: ['#d9a521', '#6e4a00'] }
+];
+const BOXES = {
+  green:  { name: 'תיבה ירוקה', c: ['#62de8d', '#1d7a3e'], coins: [30, 80],    item: .06, max: 300 },
+  blue:   { name: 'תיבה כחולה', c: ['#6cb4ff', '#1f4fa8'], coins: [80, 200],   item: .14, max: 700 },
+  purple: { name: 'תיבה סגולה', c: ['#c590ff', '#5a2aa8'], coins: [200, 450],  item: .28, max: 1200 },
+  gold:   { name: 'תיבת זהב',   c: ['#ffe07a', '#b8860b'], coins: [450, 1000], item: .5,  max: 1e9 }
+};
+const CAT_NAME = { board: 'לוח', coins: 'סט דיסקיות', striker: 'סטרייקר' };
+const allItems = () => [...SKINS.map(s => ({ s, cat: 'board' })), ...COIN_SETS.map(s => ({ s, cat: 'coins' })), ...STRIKERS.map(s => ({ s, cat: 'striker' }))];
+function rollBox(tier) {
+  const B = BOXES[tier];
+  let coins = B.coins[0] + Math.floor(Math.random() * (B.coins[1] - B.coins[0] + 1)), item = null;
+  if (Math.random() < B.item) {
+    const pool = allItems().filter(x => x.s.price > 0 && x.s.price <= B.max && !W$.data.owned.includes(x.s.id));
+    if (pool.length) item = pool[Math.floor(Math.random() * pool.length)]; else coins = Math.round(coins * 1.5);
+  }
+  return { tier, coins: Math.max(5, Math.round(coins / 5) * 5), item };
+}
+// the box's contents go straight into the wallet; the box screen only reveals them
+function grantBox(tier) {
+  const r = rollBox(tier);
+  W$.data.coins += r.coins;
+  if (r.item) W$.data.owned.push(r.item.s.id);
   saveWallet();
+  return r;
+}
+function miniBox(tier) { const b = BOXES[tier]; return el('span', { class: 'minibox', style: `--c1:${b.c[0]};--c2:${b.c[1]}` }); }
+function chestView(r) {
+  const B = BOXES[r.tier];
+  const chest = el('button', { class: 'chest', type: 'button', style: `--c1:${B.c[0]};--c2:${B.c[1]}`, 'aria-label': 'לפתוח את ה' + B.name },
+    el('span', { class: 'glow' }), el('span', { class: 'body' }), el('span', { class: 'lid' }), el('span', { class: 'lock' }));
+  const hint = el('p', { class: 'note', text: 'לחץ על התיבה כדי לפתוח' });
+  const items = [el('div', { class: 'reward' }, el('span', { class: 'coin' }), `+${r.coins}`, el('small', { text: 'מטבעות' }))];
+  if (r.item) items.push(el('div', { class: 'reward' }, skinPreview(r.item.cat, r.item.s), r.item.s.name, el('small', { text: CAT_NAME[r.item.cat] + ' חדש!' })));
+  const rewards = el('div', { class: 'rewards' }, items);
+  let opened = false;
+  chest.addEventListener('click', () => {
+    if (opened) return; opened = true; ensureAudio();
+    chest.classList.add('shake'); clack(2500);
+    setTimeout(() => {
+      chest.classList.remove('shake'); chest.classList.add('open'); rewards.classList.add('show'); plop();
+      hint.textContent = r.item ? 'פריט חדש! בוחרים אותו בחנות.' : 'המטבעות נכנסו לארנק.';
+    }, 650);
+  });
+  return el('div', { class: 'chestwrap' }, el('div', { class: 'boxname', text: B.name }), chest, hint, rewards);
+}
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dailyBonusDue = () => !!ACC.name && W$.data.daily !== today();
+function showDailyBonus() {
+  W$.data.daily = today(); changeCoins(DAILY_BONUS);
+  openSheet('bonus',
+    el('div', { class: 'big', text: 'בונוס יומי!' }),
+    el('div', { class: 'rewards show' }, el('div', { class: 'reward' }, el('span', { class: 'coin' }), `+${DAILY_BONUS}`, el('small', { text: 'מטבעות על הכניסה היום' }))),
+    el('p', { class: 'note', style: 'text-align:center', text: 'נכנסים כל יום ומקבלים עוד.' }),
+    btn('יאללה, ללובי', '', showHome, 'primary'));
+}
+// daily mission: a few shots alone on the board; the more coins pocketed, the better the box
+const MISSIONS = [{ shots: 5, target: 3 }, { shots: 6, target: 4 }, { shots: 4, target: 2 }];
+const MISSION_TIERS = { 2: ['blue', 'gold'], 3: ['green', 'blue', 'gold'], 4: ['green', 'blue', 'purple', 'gold'] };
+function todaysMission() { const d = new Date(); return MISSIONS[Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5) % MISSIONS.length]; }
+const missionDone = () => !!(W$.data.mission && W$.data.mission.day === today());
+const missionTier = (got, target) => got <= 0 ? null : MISSION_TIERS[target][Math.min(got, target) - 1];
+function startMission() {
+  if (missionDone()) { showMission(); return; }
+  leaveOnline();
+  const m = todaysMission();
+  G.mode = 'mission'; G.level = 'medium'; G.st = newState('1v1'); G.st.seats = [0];
+  G.ctrl = ['human', 'ai', 'ai', 'ai']; G.names = ['אתה', '', '', ''];
+  G.myTeam = 0; G.viewSeat = 0; G.viewAngle = 0; G.rot = null; G.fx = []; G.bet = null;
+  G.mission = { shots: m.shots, target: m.target, used: 0, got: 0 };
+  W$.data.mission = { day: today(), got: 0, done: false }; saveWallet(); // the day's try starts now
+  G.settings = { mode: 'mission' };
+  setTeamNames(); closeSheet(); beginTurn();
+}
+function missionSettle() {
+  const M = G.mission, st = JSON.parse(JSON.stringify(G.st));
+  let got = 0, foul = false;
+  for (const p of G.simEv.pocketed) { if (p.i === 19) foul = true; else got++; }
+  st.coins = new Array(19).fill(null);
+  for (const b of G.simB) if (b.i < 19 && !b.out) st.coins[b.i] = [round2(b.x), round2(b.y)];
+  st.shotNo++;
+  M.used++; M.got += got;
+  G.st = st; G.simB = null; G.phase = 'pause';
+  toast(got ? (got > 1 ? `נכנסו ${got}!` : 'נכנס!') : foul ? 'הסטרייקר נפל לכיס' : 'לא נכנס');
+  updateHud();
+  const tok = ++G.token;
+  if (M.used >= M.shots || M.got >= M.target) {
+    G.phase = 'over'; G.showStriker = false; setCoach('המשימה הסתיימה', '');
+    W$.data.mission = { day: today(), got: M.got, done: true };
+    const tier = missionTier(M.got, M.target), reward = tier ? grantBox(tier) : null;
+    if (!tier) saveWallet();
+    setTimeout(() => { if (tok === G.token) showMissionResult(M, reward); }, 700);
+  } else setTimeout(() => { if (tok === G.token) beginTurn(); }, 450);
+}
+function backToLobby() {
+  if (G.mode !== 'online') { G.mode = null; G.mission = null; G.phase = 'idle'; G.showStriker = false; G.token++; G.simB = null; updateHud(); setCoach('', ''); }
+  showHome();
 }
 
 /* ---------------- online (claude.ai room) ---------------- */
@@ -1451,8 +1692,8 @@ function hostGone() {
   showMessage('המארח יצא', inGame ? 'המשחק נעצר כי מי שפתח את החדר יצא ממנו.' : 'החדר נסגר.');
 }
 function canAffordOnline() {
-  if (W$.data.coins >= ONLINE_STAKE) return true;
-  toast(`צריך ${ONLINE_STAKE} מטבעות כדי לשחק אונליין — אפשר לקבל מתנה במסך "נגד המחשב"`);
+  if (W$.data.coins >= ONLINE_TABLE.fee) return true;
+  toast(`צריך ${ONLINE_TABLE.fee} מטבעות כדי לשחק אונליין — אפשר לשחק משחק חופשי או לחכות לבונוס היומי`);
   return false;
 }
 async function hostCreate(fmt) {
@@ -1489,7 +1730,7 @@ function startOnline() {
   const me = NET.seats.indexOf(NET.myPeer);
   G.myTeam = teamOf(G.st, me); G.viewSeat = me; G.viewAngle = me * Math.PI / 2; G.rot = null; G.fx = []; G.level = 'medium';
   G.settings = { mode: 'online' };
-  placeBet(ONLINE_STAKE);
+  placeBet(ONLINE_TABLE);
   applySeats(true); closeSheet(); beginTurn();
 }
 function applySeats(initial) {
@@ -1521,7 +1762,7 @@ function syncFromHost() {
   if (!newGame && g.shotNo <= G.st.shotNo) return;
   if (G.phase === 'sim' && !newGame) return;
   G.st = JSON.parse(JSON.stringify(g)); G.simB = null; G.fx = [];
-  if (newGame) { if (sheetView === 'over') closeSheet(); placeBet(ONLINE_STAKE); }
+  if (newGame) { if (sheetView === 'over') closeSheet(); placeBet(ONLINE_TABLE); }
   else toast(G.st.msg);
   beginTurn();
 }
@@ -1549,54 +1790,90 @@ function seg(id, opts, value, onChange) {
   }
   return box;
 }
-function openSheet(view, ...kids) { sheetView = view; $('panel').replaceChildren(...kids.filter(Boolean)); $('sheet').hidden = false; sheetOpen = true; $('panel').scrollTop = 0; }
+function openSheet(view, ...kids) {
+  sheetView = view;
+  const p = $('panel');
+  p.className = 'panel' + (view === 'home' ? ' lobby' : '');
+  $('sheet').classList.toggle('full', view === 'home');
+  p.replaceChildren(...kids.filter(Boolean)); $('sheet').hidden = false; sheetOpen = true; p.scrollTop = 0;
+}
 function closeSheet() { $('sheet').hidden = true; sheetOpen = false; sheetView = ''; }
-function soundRow() {
-  return btn(G.muted ? 'צלילים: כבויים' : 'צלילים: פועלים', '', () => { G.muted = !G.muted; store.set('muted', G.muted); ensureAudio(); showHome(); }, 'quiet');
-}
+const fmtN = n => n.toLocaleString('he-IL');
+// the lobby: stake tables in the middle, game modes along the bottom (like 8 Ball Pool)
 function showHome() {
-  const inGame = G.mode && G.st.winner === null;
-  openSheet('home',
-    el('h1', { text: 'קארום' }),
-    el('p', { class: 'lead', text: 'לוח העץ ההודי. ממקמים את הסטרייקר במסילה שמתחת ללוח, ואז מעיפים אותו על הלוח באצבע — ככל שהתנופה חזקה יותר, המכה חזקה יותר.' }),
-    el('div', { class: 'acctrow' },
-      el('button', { class: 'acctbtn', type: 'button', onclick: showAccount, 'aria-label': 'החשבון שלי' },
-        el('span', { class: 'avatar', text: (ACC.name || '?').slice(0, 1) }), el('span', { class: 'acct-name', text: ACC.name })),
-      walletPill()),
-    inGame ? btn('המשך משחק', '', closeSheet, 'primary') : null,
-    btn('נגד המחשב', 'קל, בינוני או קשה · משחקים על מטבעות', showAI),
-    btn('שניים או ארבעה על טלפון אחד', 'מעבירים את הטלפון · הלוח מסתובב אל מי שבתור', showLocal),
-    btn('אונליין עם חברים', 'חדר עם קוד · 1 על 1 או 2 על 2 · 100 מטבעות', showOnline),
-    btn('חנות סקינים', 'לוחות, דיסקיות וסטרייקרים', showShop),
-    btn('איך משחקים', '', showRules),
-    !IN_CLAUDE && !INSTALL.installed ? btn('התקן אפליקציה', 'אייקון במסך הבית · נפתח במסך מלא', installApp) : null,
-    G.mode === 'online' ? btn('צא מהחדר', '', () => { leaveOnline(); showHome(); }, 'quiet') : null,
-    soundRow()
-  );
-}
-function showAI() {
-  let level = store.get('level', 'medium'), fmt = store.get('aiFmt', '1v1');
-  const stakeNote = el('p', { class: 'bet win' });
-  const start = btn('התחל', '', () => startLocalGame('ai', fmt, level), 'primary');
-  const gift = btn(`קבל ${GIFT} מטבעות מתנה`, 'כשנגמרים המטבעות', () => { changeCoins(GIFT); showAI(); }, 'small');
-  const refresh = () => {
-    const s = STAKE[level];
-    stakeNote.textContent = `כניסה: ${s} מטבעות · מנצחים ולוקחים ${2 * s}`;
-    start.disabled = W$.data.coins < s;
-    gift.hidden = W$.data.coins >= STAKE.easy;
-  };
-  openSheet('ai',
-    el('h2', { text: 'נגד המחשב' }),
+  if (dailyBonusDue()) { showDailyBonus(); return; }
+  const inGame = G.mode && G.st.winner === null && G.phase !== 'over';
+  const coins = W$.data.coins;
+  const arenas = el('div', { class: 'arenas' });
+  let first = null;
+  for (const a of ARENAS) {
+    const can = coins >= a.fee;
+    const lv = el('span', { class: 'lvl', 'aria-label': `רמת מחשב ${a.stars} מתוך 6` });
+    for (let i = 1; i <= 6; i++) lv.append(el('i', { class: i <= a.stars ? 'on' : '' }));
+    const card = el('button', { class: 'arena', type: 'button', style: `--a1:${a.a[0]};--a2:${a.a[1]}`, disabled: !can, onclick: () => startLocalGame('ai', '1v1', a.level, a) },
+      el('span', { class: 'aname', text: a.name }),
+      el('span', { class: 'asub', text: a.sub }),
+      el('span', { class: 'aprize' }, el('span', { class: 'coin' }), `פרס: ${fmtN(a.prize)}`),
+      el('span', { class: 'ameta' }, el('span', { text: `כניסה: ${fmtN(a.fee)}` }), el('span', null, 'מחשב ', lv)),
+      el('span', { class: 'abox' }, miniBox(a.box), can ? `ניצחון = ${BOXES[a.box].name}` : `חסרים ${fmtN(a.fee - coins)} מטבעות`));
+    if (can) first = card;
+    arenas.append(card);
+  }
+  const m = todaysMission(), md = missionDone();
+  const tb = (text, on, cls) => el('button', { class: 'tb' + (cls ? ' ' + cls : ''), type: 'button', onclick: on }, text);
+  const top = el('div', { class: 'topbar' },
+    el('button', { class: 'acctbtn', type: 'button', onclick: showAccount, 'aria-label': 'החשבון שלי' },
+      el('span', { class: 'avatar', text: (ACC.name || '?').slice(0, 1) }), el('span', { class: 'acct-name', text: ACC.name })),
     walletPill(),
+    el('span', { class: 'spacer' }),
+    tb('חנות', showShop, 'hot'),
+    tb('איך משחקים', showRules),
+    tb(G.muted ? 'צלילים: כבויים' : 'צלילים: פועלים', () => { G.muted = !G.muted; store.set('muted', G.muted); ensureAudio(); showHome(); }),
+    !IN_CLAUDE && !INSTALL.installed ? tb('התקן אפליקציה', installApp) : null,
+    G.mode === 'online' ? tb('צא מהחדר', () => { leaveOnline(); showHome(); }) : null);
+  const mode = (label, sub, c, on) => el('button', { class: 'mode', type: 'button', style: `--m1:${c[0]};--m2:${c[1]}`, onclick: on }, el('b', { text: label }), el('small', { text: sub }));
+  const modes = el('div', { class: 'modes' },
+    inGame ? mode('המשך משחק', 'חזרה ללוח', ['#f2a531', '#b06508'], closeSheet) : null,
+    mode('משחק חופשי', 'נגד המחשב, בלי מטבעות', ['#3fae5c', '#1d6b33'], showFree),
+    mode('משימה יומית', md ? 'בוצעה היום ✓' : `${m.target} דיסקיות ב-${m.shots} תורות`, ['#ef7d3c', '#a7401a'], showMission),
+    mode('אונליין', 'עם חברים · קוד חדר', ['#3d8ae6', '#1a4b9a'], showOnline),
+    mode('טלפון אחד', '2 או 4 שחקנים', ['#20a7a0', '#0e625e'], showLocal));
+  openSheet('home', top, arenas, modes);
+  // show the richest table you can afford
+  if (first) requestAnimationFrame(() => { try { first.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {} });
+}
+function showFree() {
+  let level = store.get('level', 'medium'), fmt = store.get('aiFmt', '1v1');
+  openSheet('ai',
+    el('h2', { text: 'משחק חופשי' }),
+    el('p', { class: 'lead', text: 'נגד המחשב, בלי מטבעות ובלי תיבות. בשביל להתאמן, או כשנגמר הכסף.' }),
     el('p', { class: 'label', text: 'רמה' }),
-    seg('lvl', [['easy', 'קל'], ['medium', 'בינוני'], ['hard', 'קשה']], level, v => { level = v; store.set('level', v); refresh(); }),
+    seg('lvl', [['easy', 'קל'], ['medium', 'בינוני'], ['hard', 'קשה']], level, v => { level = v; store.set('level', v); }),
     el('p', { class: 'label', text: 'מצב' }),
     seg('fmt', [['1v1', '1 על 1'], ['2v2', '2 על 2']], fmt, v => { fmt = v; store.set('aiFmt', v); }),
-    el('p', { class: 'note', text: 'הצבע שלך נקבע לפי האסימון הראשון שנכנס. ב-2 על 2 השותף שלך (מחשב) יושב מולך.' }),
-    stakeNote, start, gift,
-    btn('חזרה', '', showHome, 'quiet')
-  );
-  refresh();
+    el('p', { class: 'note', text: 'ב-2 על 2 השותף שלך (מחשב) יושב מולך.' }),
+    btn('התחל', '', () => startLocalGame('ai', fmt, level), 'primary'),
+    btn('חזרה', '', showHome, 'quiet'));
+}
+function showMission() {
+  const m = todaysMission(), md = missionDone(), tiers = MISSION_TIERS[m.target];
+  const row = el('div', { class: 'missionrow' }, tiers.map((t, i) => el('span', { class: 'mtier' }, miniBox(t), `${i + 1} = ${BOXES[t].name}`)));
+  openSheet('missionInfo',
+    el('h2', { text: 'משימה יומית' }),
+    el('p', { class: 'lead', text: `יש לך ${m.shots} תורות להכניס ${m.target} דיסקיות. כל דיסקית נחשבת, גם המלכה, ואין יריב.` }),
+    row,
+    el('p', { class: 'note', text: 'הכנסת 0 — אין תיבה. יש ניסיון אחד ביום, ומחר מחכה משימה חדשה.' }),
+    md ? el('p', { class: 'bet win', text: `כבר שיחקת היום והכנסת ${W$.data.mission.got}. חוזרים מחר.` }) : btn('התחל משימה', '', startMission, 'primary'),
+    btn('חזרה', '', showHome, 'quiet'));
+}
+function showMissionResult(M, reward) {
+  const info = el('div', { class: 'col' },
+    el('div', { class: 'big', text: reward ? (M.got >= M.target ? 'משימה הושלמה!' : 'כל הכבוד!') : 'לא הפעם' }),
+    el('p', { class: 'lead', style: 'text-align:center', text: `הכנסת ${M.got} דיסקיות ב-${M.used} תורות (היעד: ${M.target}).` }),
+    reward ? null : el('p', { class: 'note', style: 'text-align:center', text: 'בלי הכנסה אין תיבה. מחר יש משימה חדשה.' }),
+    btn('ללובי', '', backToLobby, 'primary'));
+  openSheet('mission', info, reward ? el('div', { class: 'col' }, chestView(reward)) : null);
+  if (reward) $('panel').classList.add('split');
 }
 function showLocal() {
   let fmt = store.get('localFmt', '1v1');
@@ -1630,7 +1907,7 @@ async function showOnline() {
     el('div', { class: 'divider', text: 'או' }),
     el('p', { class: 'label', text: 'הצטרף עם קוד' }), code,
     btn('הצטרף', '', () => guestJoin(code.value)),
-    el('p', { class: 'bet win', text: `כל שחקן שם ${ONLINE_STAKE} מטבעות, והמנצחים לוקחים הכל.` }),
+    el('p', { class: 'bet win', text: `כל שחקן שם ${ONLINE_TABLE.fee} מטבעות. מנצחים ולוקחים ${ONLINE_TABLE.prize} ותיבה כחולה.` }),
     el('p', { class: 'note', text: IN_CLAUDE ? 'החברים צריכים לפתוח את אותו משחק ב-claude.ai (שתפו אותו איתם דרך כפתור השיתוף).' : `החברים פותחים את ${APP_URL.replace('https://', '')} ונכנסים עם קוד החדר.` }),
     btn('חזרה', '', showHome, 'quiet')
   );
@@ -1661,14 +1938,17 @@ function showRules() {
   openSheet('rules',
     el('h2', { text: 'איך משחקים' }),
     el('ul', { class: 'rules' },
-      li(el('b', { text: 'מיקום: ' }), 'בתחילת התור מזיזים את הסטרייקר במסילה שמתחת ללוח. ימינה ושמאלה במסילה = ימינה ושמאלה על הקו שלך.'),
+      li(el('b', { text: 'מיקום: ' }), 'בתחילת התור מזיזים את הסטרייקר במסילה שבצד הלוח. ימינה ושמאלה במסילה = ימינה ושמאלה על הקו שלך.'),
       li(el('b', { text: 'מכה: ' }), 'על הלוח עצמו שמים אצבע על הסטרייקר ומחליקים בתנופה לכיוון שרוצים. מהירות האצבע = עוצמת המכה. אין חץ — מכוונים לבד. נגיעה על הלוח לא מזיזה את הסטרייקר.'),
       li(el('b', { text: 'הצבע שלך: ' }), 'לא בוחרים מראש. מי שמכניס ראשון אסימון — הצבע של האסימון הזה הוא הצבע שלו עד סוף המשחק.'),
       li('נכנס אסימון שלך? נקודה ועוד תור. אסימון של היריב נספר ליריב.'),
       li(el('b', { text: 'המלכה האדומה: ' }), 'מותר להכניס אותה בכל רגע. מי שמכניס אותה חייב באותו תור להכניס גם אסימון בצבע שלו (באותה מכה או במכה הבאה). הצליח — +3 נקודות. לא הצליח — המלכה חוזרת למרכז ואין נקודות.'),
       li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר.'),
       li(el('b', { text: 'סוף המשחק: ' }), 'כשאחד הצבעים נכנס כולו. מנצח מי שיש לו יותר נקודות (אסימונים + 3 למלכה). בתיקו — מי שסיים את הצבע שלו.'),
-      li(el('b', { text: 'מטבעות: ' }), 'נגד המחשב ובאונליין כל שחקן שם מטבעות בהתחלה, והמנצחים לוקחים הכל. עם המטבעות קונים לוחות בחנות.'),
+      li(el('b', { text: 'שולחנות: ' }), 'בלובי בוחרים שולחן. משלמים כניסה, ומי שמנצח לוקח את הפרס ותיבה. ככל שהשולחן יקר יותר, המחשב חזק יותר.'),
+      li(el('b', { text: 'תיבות: ' }), 'ירוקה, כחולה, סגולה וזהב — מהחלשה לטובה. פותחים מיד ומקבלים מטבעות, ולפעמים לוח, סט דיסקיות או סטרייקר.'),
+      li(el('b', { text: 'כל יום: ' }), '150 מטבעות על הכניסה, ומשימה יומית אחת שנותנת תיבה לפי כמה הכנסת.'),
+      li(el('b', { text: 'נגמר הכסף? ' }), 'משחק חופשי נגד המחשב לא עולה כלום.'),
       li('ב-2 על 2 השותף יושב מולך, והתור עובר נגד כיוון השעון.')
     ),
     btn('חזרה', '', showHome, 'quiet')
@@ -1807,19 +2087,26 @@ function showGameOver() {
     el('span', null, ':'),
     el('span', null, String(f[1]), el('small', { text: G.teamNames[1] })));
   const b = G.bet && G.bet.gid === st.gid && G.bet.paid ? G.bet : null;
-  const betLine = b ? el('p', { class: 'bet ' + (b.won ? 'win' : 'lose'), text: b.won ? `+${b.share} מטבעות! (הרווחת ${b.share - b.stake})` : `הפסדת ${b.stake} מטבעות` }) : null;
+  const betLine = b ? el('p', { class: 'bet ' + (b.won ? 'win' : 'lose'), text: b.won ? `+${fmtN(b.share)} מטבעות! (הרווחת ${fmtN(b.share - b.stake)})` : `הפסדת ${fmtN(b.stake)} מטבעות` }) : null;
+  const arena = G.settings && G.settings.arena;
   const again = () => {
     if (G.mode === 'online') {
       if (!NET.isHost) return;
-      G.st = newState(NET.fmt); placeBet(ONLINE_STAKE); NET.pres({ game: G.st, shot: null }); closeSheet(); beginTurn();
-    } else if (G.settings) startLocalGame(G.settings.mode, G.settings.fmt, G.settings.level);
+      G.st = newState(NET.fmt); placeBet(ONLINE_TABLE); NET.pres({ game: G.st, shot: null }); closeSheet(); beginTurn();
+    } else if (G.settings) startLocalGame(G.settings.mode, G.settings.fmt, G.settings.level, arena);
   };
-  openSheet('over',
-    el('div', { class: 'big', text: title }),
-    scoreRow, betLine, b ? walletPill() : null,
-    G.mode === 'online' && !NET.isHost ? el('p', { class: 'note', text: 'המארח יכול להתחיל משחק חוזר.' }) : btn('משחק חוזר', '', again, 'primary'),
-    btn('לתפריט', '', () => { if (G.mode !== 'online') { G.mode = null; G.phase = 'idle'; G.showStriker = false; updateHud(); setCoach('', ''); } showHome(); }, 'quiet')
-  );
+  let againBtn;
+  if (G.mode === 'online' && !NET.isHost) againBtn = el('p', { class: 'note', text: 'המארח יכול להתחיל משחק חוזר.' });
+  else {
+    againBtn = btn(arena ? `שוב ב${arena.name} · ${fmtN(arena.fee)}` : 'משחק חוזר', '', again, 'primary');
+    if (arena && W$.data.coins < arena.fee) againBtn.disabled = true;
+  }
+  const info = [el('div', { class: 'big', text: title }), scoreRow, betLine, b ? walletPill() : null, againBtn, btn('ללובי', '', backToLobby, 'quiet')];
+  if (b && b.reward) {
+    // won a box: result on one side, the box to open on the other
+    openSheet('over', el('div', { class: 'col' }, info.filter(Boolean)), el('div', { class: 'col' }, chestView(b.reward)));
+    $('panel').classList.add('split');
+  } else openSheet('over', ...info);
 }
 $('menuBtn').addEventListener('click', () => {
   ensureAudio();
@@ -1829,7 +2116,7 @@ $('menuBtn').addEventListener('click', () => {
 $('sheet').addEventListener('pointerdown', ensureAudio);
 
 /* ---------------- boot ---------------- */
-new ResizeObserver(() => resize()).observe($('stage'));
+new ResizeObserver(() => resize()).observe($('app'));
 resize();
 updateHud();
 openSheet('boot', el('h1', { text: 'קארום' }), el('p', { class: 'note', text: 'טוען…' }));
