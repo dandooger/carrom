@@ -17,8 +17,8 @@ body{margin:0;font-size:14px}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.CARROM_VERSION = "1794164635645";</script>
-<title>קארום</title>
+<script>window.CARROM_VERSION = "1794171184452";</script>
+<title>Carrom Israel</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -301,6 +301,8 @@ input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 1
 .boxrow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .boxstep{display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800}
 .boxstep small{font-size:12px;color:var(--ivory-dim)}
+.logoimg{display:block;flex:none;height:42px;width:auto;border-radius:10px;background:#fefaf4;padding:2px 6px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.logoimg.big{height:min(190px,42vh);align-self:center;border-radius:22px;padding:6px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -2680,6 +2682,10 @@ function openSheet(view, ...kids) {
   } }, svgX());
   p.replaceChildren(...[x].concat(kids).filter(Boolean)); $('sheet').hidden = false; sheetOpen = true; p.scrollTop = 0;
 }
+// the Carrom Israel logo: the full artwork on the opening screens, just the board-and-striker mark in the lobby corner
+function logoEl(big) {
+  return el('img', { class: 'logoimg' + (big ? ' big' : ''), src: big ? 'icons/logo.webp' : 'icons/logo-mark.webp', alt: 'Carrom Israel', draggable: 'false' });
+}
 function svgX() {
   const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '20'); s.setAttribute('height', '20'); s.setAttribute('aria-hidden', 'true');
@@ -2715,6 +2721,7 @@ function showHome() {
   const m = MISSION, md = missionDone();
   const tb = (text, on, cls) => el('button', { class: 'tb' + (cls ? ' ' + cls : ''), type: 'button', onclick: on }, text);
   const top = el('div', { class: 'topbar' },
+    logoEl(false),
     el('button', { class: 'acctbtn', type: 'button', onclick: showAccount, 'aria-label': 'החשבון שלי' },
       el('span', { class: 'avatar', text: (ACC.name || '?').slice(0, 1) }), el('span', { class: 'acct-name', text: ACC.name })),
     walletPill(),
@@ -2952,7 +2959,7 @@ function showWelcome(mode, msg, prefill) {
     showHome();
   } }, name, online ? code : null, err, go);
   openSheet('welcome',
-    el('h1', { text: 'קארום' }),
+    logoEl(true),
     el('p', { class: 'lead', text: m === 'login' ? 'כתוב את שם המשתמש והקוד הסודי שלך.' : 'בחר שם משתמש וקוד סודי. איתם נכנסים לחשבון — עם המטבעות והסקינים — מכל טלפון.' }),
     online ? seg('wtab', [['new', 'משתמש חדש'], ['login', 'יש לי חשבון']], m, v => showWelcome(v, '', name.value))
       : el('p', { class: 'note', text: IN_CLAUDE ? 'המשחק לא פתוח כרגע ב-claude.ai, אז החשבון יישמר רק בטלפון הזה.' : 'אין כרגע חיבור לאינטרנט, אז החשבון יישמר רק בטלפון הזה.' }),
@@ -3058,7 +3065,7 @@ $('sheet').addEventListener('pointerdown', ensureAudio);
 new ResizeObserver(() => resize()).observe($('app'));
 resize();
 updateHud();
-openSheet('boot', el('h1', { text: 'קארום' }), el('p', { class: 'note', text: 'טוען…' }));
+openSheet('boot', logoEl(true), el('p', { class: 'note', style: 'text-align:center', text: 'טוען…' }));
 bootAccount();
 requestAnimationFrame(t => { last = t; frame(t); });
 })();
