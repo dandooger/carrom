@@ -280,6 +280,13 @@ const HALF = 500, FRAME = 40;
 const R_C = 26, R_S = 33, M_C = 1, M_S = 2.8;
 const POCKET = 470, POCKET_R = 36, POCKET_DRAW = 38;
 const BASE_Y = 341.5, BASE_X = 296;
+// the striker sits either fully on an end circle or on the line without touching it — never half on the circle
+const BASE_CIRCLE_R = 21.5, LINE_MAX = BASE_X + .5 - BASE_CIRCLE_R - R_S;
+function legalX(x) {
+  const a = Math.abs(x), s = x < 0 ? -1 : 1;
+  if (a <= LINE_MAX) return x;
+  return s * (a < (LINE_MAX + BASE_X) / 2 ? LINE_MAX : BASE_X);
+}
 const DT = 1 / 400, FR = 850, E_BALL = 0.9, E_WALL = 0.62, STOP = 4, VMAX = 5200, POWER = 0.85;
 const POCKETS = [[POCKET, POCKET], [-POCKET, POCKET], [-POCKET, -POCKET], [POCKET, -POCKET]];
 const colorOf = i => i === 0 ? 'q' : i <= 9 ? 'w' : i <= 18 ? 'b' : 's';
@@ -344,10 +351,11 @@ function freeSpot(coins) {
 }
 function validPlace(lx, seat, coins) { const [x, y] = rotW(lx, BASE_Y, seat); return !overlapsAny(coins, x, y, R_S); }
 function startX(seat, coins) {
-  for (let d = 0; d <= BASE_X; d += 3) {
+  for (let d = 0; d <= LINE_MAX; d += 3) {
     if (validPlace(d, seat, coins)) return d;
     if (validPlace(-d, seat, coins)) return -d;
   }
+  for (const x of [BASE_X, -BASE_X]) if (validPlace(x, seat, coins)) return x;
   return 0;
 }
 
@@ -508,8 +516,9 @@ function aiPlan(st, level) {
   const pendingMine = st.queen && !st.queen.covered && st.queen.by === T;
   const targets = pendingMine ? ownLeft : ownLeft.concat(qOn ? [0] : []);
   const cands = [];
-  for (let k = 0; k <= 16; k++) {
-    const lx = -BASE_X + k * (2 * BASE_X / 16);
+  const spots = [-BASE_X, BASE_X];
+  for (let k = 0; k <= 14; k++) spots.push(-LINE_MAX + k * (2 * LINE_MAX / 14));
+  for (const lx of spots) {
     if (!validPlace(lx, seat, coins)) continue;
     const [sx, sy] = rotW(lx, BASE_Y, seat);
     for (const t of targets) {
@@ -711,7 +720,7 @@ function canInput() {
 }
 function setStrikerX(x) {
   const seat = curSeat(G.st);
-  G.strikerX = clamp(x, -BASE_X, BASE_X);
+  G.strikerX = legalX(clamp(x, -BASE_X, BASE_X));
   const ok = validPlace(G.strikerX, seat, G.st.coins);
   if (ok !== G.placeValid) { G.placeValid = ok; $('coachSub').textContent = ok ? HOWTO : 'הסטרייקר נוגע באסימון — הזז אותו'; }
   if (G.mode === 'online') NET.pres({ aim: { n: G.st.shotNo, g: G.st.gid, x: Math.round(G.strikerX) } });
@@ -1984,7 +1993,7 @@ function checkRemote() {
   const s = p.presence.shot;
   if (s && s.n === st.shotNo && s.g === st.gid && s.seat === seat && [s.x, s.y, s.vx, s.vy].every(Number.isFinite)) { fire(s, false); return; }
   const a = p.presence.aim;
-  if (a && a.n === st.shotNo && a.g === st.gid && Number.isFinite(a.x)) G.strikerTarget = clamp(a.x, -BASE_X, BASE_X);
+  if (a && a.n === st.shotNo && a.g === st.gid && Number.isFinite(a.x)) G.strikerTarget = legalX(clamp(a.x, -BASE_X, BASE_X));
 }
 function syncFromHost() {
   const hp = NET.hp; if (!hp || !validGame(hp.game) || G.mode !== 'online') return;
@@ -2182,7 +2191,7 @@ function showRules() {
   openSheet('rules',
     el('h2', { text: 'איך משחקים' }),
     el('ul', { class: 'rules' },
-      li(el('b', { text: 'מיקום: ' }), 'בתחילת התור מזיזים את הסטרייקר במסילה שבצד הלוח. ימינה ושמאלה במסילה = ימינה ושמאלה על הקו שלך.'),
+      li(el('b', { text: 'מיקום: ' }), 'בתחילת התור מזיזים את הסטרייקר במסילה שבצד הלוח. ימינה ושמאלה במסילה = ימינה ושמאלה על הקו שלך. הסטרייקר יכול לשבת על העיגול האדום כולו, או על הקו בלי לגעת בעיגול — אף פעם לא חצי-חצי, אז הוא קופץ למקום החוקי הקרוב.'),
       li(el('b', { text: 'מכה: ' }), 'על הלוח עצמו שמים אצבע על הסטרייקר ומחליקים בתנופה לכיוון שרוצים. מהירות האצבע = עוצמת המכה. אין חץ — מכוונים לבד. נגיעה על הלוח לא מזיזה את הסטרייקר.'),
       li(el('b', { text: 'הצבע שלך: ' }), 'לא בוחרים מראש. מי שמכניס ראשון אסימון — הצבע של האסימון הזה הוא הצבע שלו עד סוף המשחק.'),
       li('נכנס אסימון שלך? נקודה ועוד תור. אסימון של היריב נספר ליריב.'),
