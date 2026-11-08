@@ -1,6 +1,6 @@
 // Offline cache for the Carrom app. The page itself comes fresh from the internet when
 // possible (so updates arrive right away) and from the cache when offline.
-const CACHE = "carrom-1794152212611";
+const CACHE = "carrom-1794153516928";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {

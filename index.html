@@ -17,7 +17,7 @@ body{margin:0;font-size:14px}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.CARROM_VERSION = "1794152212611";</script>
+<script>window.CARROM_VERSION = "1794153516928";</script>
 <title>קארום</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -847,6 +847,7 @@ function missionEnd(win) {
 // queen in the middle, 3 white and 3 black around her. Pocket your 3, then the queen to win.
 // Whoever pockets the queen before their 3 are in loses on the spot. No fouls.
 const BLITZ_AI_GAP = { easy: 3400, medium: 2300, hard: 1400 };
+const BLITZ_PRIZE = { easy: 10, medium: 25, hard: 50 }; // no entry fee: you can only win coins here
 const OPP_STRIKER = { g: ['#ffc2b8', '#d63a2e', '#7a0d0d'], rim: '#3a0000', style: 'classic' };
 const kindOf = i => i === 20 ? 's2' : i === 19 ? 's' : colorOf(i);
 const BLITZ_IDS = { w: [1, 2, 3], b: [10, 11, 12] };
@@ -952,6 +953,10 @@ function blitzEnd(winner, reason) {
   G.st.winner = winner;
   G.st.final = [0, 1].map(T => blitzIn(G.st.coins, G.st.colors[T]));
   G.phase = 'over';
+  Z.prize = winner === 0 ? (BLITZ_PRIZE[G.level] || 0) : 0;
+  W$.data.games += 1;
+  if (Z.prize) { W$.data.wins += 1; W$.data.coins += Z.prize; }
+  saveWallet();
   const msg = reason === 'queen'
     ? (winner === 0 ? 'הכנסת את המלכה — ניצחת!' : 'המחשב הכניס את המלכה וניצח')
     : (winner === 0 ? 'המחשב הכניס את המלכה מוקדם מדי — הפסד טכני שלו!' : 'המלכה נכנסה לפני ה-3 שלך — הפסד טכני');
@@ -2360,7 +2365,7 @@ function showHome() {
     mode('משימה יומית', md ? 'בוצעה היום ✓' : `${m.target} דיסקיות ב-${m.secs} שניות`, ['#ef7d3c', '#a7401a'], showMission),
     mode('אונליין', 'עם חברים · קוד חדר', ['#3d8ae6', '#1a4b9a'], showOnline),
     mode('טלפון אחד', '2 או 4 שחקנים', ['#20a7a0', '#0e625e'], showLocal),
-    mode('קארום בזק', 'בלי תורות · נגד המחשב', ['#d6457a', '#7d1740'], showBlitz));
+    mode('קארום בזק', 'בלי תורות · זכייה עד 50', ['#d6457a', '#7d1740'], showBlitz));
   openSheet('home', top, arenas, modes);
   // show the richest table you can afford
   if (first) requestAnimationFrame(() => { try { first.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {} });
@@ -2470,7 +2475,7 @@ function showRules() {
       li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר. אם באותה מכה נכנס גם אסימון שלך, חוזר רק הוא, ואם הוא כיסה את המלכה — 3 הנקודות נשארות. עוד אין לך אסימון להחזיר? מינוס נקודה, והאסימון הבא שתכניס חוזר למשחק.'),
       li(el('b', { text: 'המלכה במרכז: ' }), 'כשהמלכה חוזרת היא תמיד במרכז, ודיסקית שעמדה שם זזה לידה.'),
       li(el('b', { text: 'שעון: ' }), 'לכל תור 30 שניות. נגמר הזמן — התור עובר.'),
-      li(el('b', { text: 'קארום בזק: ' }), 'בלי תורות — יורים מתי שרוצים. 3 לבנים, 3 שחורים והמלכה. מכניסים את 3 שלך ואז את המלכה. מי שמכניס את המלכה לפני כן — הפסד טכני. אין פאולים.'),
+      li(el('b', { text: 'קארום בזק: ' }), 'בלי תורות — יורים מתי שרוצים. 3 לבנים, 3 שחורים והמלכה. מכניסים את 3 שלך ואז את המלכה. מי שמכניס את המלכה לפני כן — הפסד טכני. אין פאולים. בלי דמי כניסה: ניצחון שווה 10 / 25 / 50 מטבעות לפי הרמה.'),
       li(el('b', { text: 'סוף המשחק: ' }), 'כשאחד הצבעים נכנס כולו. מנצח מי שיש לו יותר נקודות (אסימונים + 3 למלכה). בתיקו — מי שסיים את הצבע שלו.'),
       li(el('b', { text: 'שולחנות: ' }), 'בלובי בוחרים שולחן. משלמים כניסה, ומי שמנצח לוקח את הפרס ותיבה. ככל שהשולחן יקר יותר, המחשב חזק יותר.'),
       li(el('b', { text: 'תיבות: ' }), 'ירוקה, כחולה, סגולה וזהב — מהחלשה לטובה. תיבה שזכית בה מחכה לך בלובי, ושם פותחים אותה. בפנים יש מטבעות, ולפעמים — נדיר — לוח, סט דיסקיות או סטרייקר.'),
@@ -2605,13 +2610,13 @@ function showBlitz() {
   let level = store.get('blitzLevel', 'medium');
   openSheet('blitz',
     el('h2', { text: 'קארום בזק' }),
-    el('p', { class: 'lead', text: 'בלי תורות: אתה והמחשב יורים מתי שרוצים, באותו זמן. באמצע המלכה, ומסביב 3 לבנים (שלך) ו-3 שחורים.' }),
+    el('p', { class: 'lead', text: 'בלי תורות: אתה והמחשב יורים מתי שרוצים, באותו זמן. באמצע המלכה, ומסביב 3 לבנים (שלך) ו-3 שחורים. לא משלמים כניסה — רק מרוויחים: ניצחון בקל 10 מטבעות, בבינוני 25 ובקשה 50.' }),
     el('ul', { class: 'rules' },
       el('li', { text: 'מכניסים את 3 הלבנים, ורק אז את המלכה — ומנצחים.' }),
       el('li', { text: 'מי שמכניס את המלכה לפני שגמר את שלו — הפסד טכני.' }),
       el('li', { text: 'אין פאולים: סטרייקר שנופל פשוט חוזר לקו שלך.' })),
     el('p', { class: 'label', text: 'רמת המחשב' }),
-    seg('blvl', [['easy', 'קל'], ['medium', 'בינוני'], ['hard', 'קשה']], level, v => { level = v; store.set('blitzLevel', v); }),
+    seg('blvl', [['easy', 'קל · 10'], ['medium', 'בינוני · 25'], ['hard', 'קשה · 50']], level, v => { level = v; store.set('blitzLevel', v); }),
     btn('התחל', '', () => startBlitz(level), 'primary'));
 }
 function showMessage(title, text) { openSheet('msg', el('h2', { text: title }), el('p', { class: 'lead', text }), btn('לתפריט', '', showHome, 'primary')); }
@@ -2644,7 +2649,9 @@ function showGameOver() {
     againBtn = btn(arena ? `שוב ב${arena.name} · ${fmtN(arena.fee)}` : 'משחק חוזר', '', again, 'primary');
     if (arena && W$.data.coins < arena.fee) againBtn.disabled = true;
   }
-  const info = [el('div', { class: 'big', text: title }), scoreRow, why, betLine, b ? walletPill() : null, againBtn, btn(b && b.won && b.box ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'quiet')];
+  const blitzPay = G.mode === 'blitz' && G.blitz && G.blitz.prize
+    ? el('p', { class: 'bet win', text: `+${G.blitz.prize} מטבעות!` }) : null;
+  const info = [el('div', { class: 'big', text: title }), scoreRow, why, betLine, blitzPay, blitzPay ? walletPill() : null, b ? walletPill() : null, againBtn, btn(b && b.won && b.box ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'quiet')];
   if (b && b.won && b.box) {
     // won a box: result on one side, the box to open on the other
     openSheet('over', el('div', { class: 'col' }, info.filter(Boolean)),
