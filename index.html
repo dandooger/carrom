@@ -17,7 +17,7 @@ body{margin:0;font-size:14px}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.CARROM_VERSION = "1794143127580";</script>
+<script>window.CARROM_VERSION = "1794149516223";</script>
 <title>קארום</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,7 +40,7 @@ body{margin:0;background-color:var(--night);color:var(--ivory);font-family:var(-
   background-image:radial-gradient(rgba(242,165,49,.07) 1.4px,transparent 1.8px),radial-gradient(ellipse at 50% 40%,rgba(42,65,111,.55),transparent 70%);
   background-size:22px 22px,100% 100%}
 #app{height:100%;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) var(--bs,320px) minmax(0,1fr);gap:14px;direction:ltr;
-  padding-block:10px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+  padding-block:5px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
 .side{direction:rtl;display:flex;flex-direction:column;gap:10px;min-width:0;min-height:0}
 .side-a .iconbtn{margin-top:auto;width:52px;height:52px;align-self:flex-start}
 .side-b #placer{margin-top:auto}
@@ -228,6 +228,24 @@ input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 1
 .reward small{font-weight:600;color:var(--ivory-dim);font-size:12px}
 .missionrow{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 .mtier{display:flex;align-items:center;gap:6px;background:var(--night);border-radius:999px;padding:5px 10px;font-size:13px;font-weight:700}
+.panel{position:relative}
+.xbtn{position:sticky;top:0;align-self:flex-end;z-index:3;flex:none;width:40px;height:40px;margin:-6px -6px -40px 0;border-radius:50%;border:1px solid var(--line);
+  background:rgba(10,16,32,.8);color:var(--ivory);display:grid;place-items:center;cursor:pointer;padding:0}
+.panel.split .xbtn{position:absolute;top:10px;left:10px;margin:0}
+.xbtn:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+.col.center{align-items:center;text-align:center}
+.chestcv{display:block;flex:none}
+.abox .chestcv{margin:-6px 0}
+.panel.boxview{max-width:none;width:100%;height:100%;max-height:none;border:0;border-radius:0;box-shadow:none;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:12px;
+  padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:radial-gradient(circle at 72% 50%,rgba(255,214,120,.3),transparent 50%),linear-gradient(180deg,#16244a 0%,#3a2a68 60%,#7a3a5a 100%)}
+@media (orientation:portrait){.panel.boxview{grid-template-columns:minmax(0,1fr)}}
+.boxtitle{font-family:var(--font-display);font-size:30px;line-height:1.1;color:#ffe9a8;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.boxhint{margin:0;font-weight:700;color:var(--ivory-dim)}
+.boxview .chestcv{cursor:pointer;width:min(230px,58vh)!important;height:min(230px,58vh)!important}
+.boxview .btn{max-width:320px}
+.reward.rare{box-shadow:0 0 0 2px #ffd65a,0 0 18px rgba(255,214,90,.6)}
 /* phone held upright: ask to turn it */
 #rotate{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;
   background:var(--night);padding:24px;font-weight:800;font-size:20px}
@@ -280,9 +298,10 @@ input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 1
 const $ = id => document.getElementById(id);
 
 /* ---------------- board geometry (1 unit ≈ 0.74 mm of a real 74 cm board) ---------------- */
-const HALF = 500, FRAME = 62;
-const R_C = 21.5, R_S = 28, M_C = 1, M_S = 2.8;
-const POCKET = 470, POCKET_R = 31, POCKET_DRAW = 33;
+// pieces are drawn a little bigger than a real board, and the frame thinner, so they read well on a phone
+const HALF = 500, FRAME = 40;
+const R_C = 26, R_S = 33, M_C = 1, M_S = 2.8;
+const POCKET = 470, POCKET_R = 36, POCKET_DRAW = 38;
 const BASE_Y = 341.5, BASE_X = 296;
 const DT = 1 / 400, FR = 850, E_BALL = 0.9, E_WALL = 0.62, STOP = 4, VMAX = 5200, POWER = 0.85;
 const POCKETS = [[POCKET, POCKET], [-POCKET, POCKET], [-POCKET, -POCKET], [POCKET, -POCKET]];
@@ -439,13 +458,22 @@ function applyRules(st0, B, ev) {
   const potOwn = own ? potCoins.filter(i => colorOf(i) === own) : [];
   if (foul) {
     msgs.push('פאול! הסטרייקר נפל לכיס');
-    (own ? potOwn : potCoins).forEach(toCenter);
-    if (own) {
-      const prev = pocketedOf(st.coins, own);
-      if (prev.length) { toCenter(prev[prev.length - 1]); msgs.push('אסימון אחד שלך חוזר למרכז'); }
+    if (potOwn.length) {
+      // your own coin went in with the striker: only that coin comes back (no extra penalty),
+      // and it still covers the queen, so the 3 points stay
+      potOwn.forEach(toCenter);
+      if (potQ) { st.queen = { by: T, covered: true }; msgs.push('המלכה כוסתה! +3 נקודות'); }
+      else if (st.queen && !st.queen.covered && st.queen.by === T) { st.queen.covered = true; msgs.push('כיסית את המלכה! +3 נקודות'); }
+      msgs.push(potOwn.length > 1 ? 'מה שהכנסת חוזר למרכז' : 'האסימון שהכנסת חוזר למרכז');
+    } else {
+      if (!own) potCoins.forEach(toCenter);
+      else {
+        const prev = pocketedOf(st.coins, own);
+        if (prev.length) { toCenter(prev[prev.length - 1]); msgs.push('אסימון אחד שלך חוזר למרכז'); }
+      }
+      if (potQ) toCenter(0);
+      if (st.queen && !st.queen.covered && st.queen.by === T) { toCenter(0); st.queen = null; }
     }
-    if (potQ) toCenter(0);
-    if (st.queen && !st.queen.covered && st.queen.by === T) { toCenter(0); st.queen = null; }
   } else {
     if (potQ) {
       if (potOwn.length) { st.queen = { by: T, covered: true }; msgs.push('המלכה נכנסה וכוסתה! +3 נקודות'); }
@@ -873,15 +901,36 @@ const SKINS = [
   { id: 'walnut', name: 'אגוז כהה', price: 300, desc: 'עץ אגוז חם, מסגרת כהה ופס נחושת',
     frame: ['#3d2619', '#1b0e07', '#2f1c12'], gap: '#100703', surface: ['#d2a06a', '#a86f3d'], grain: '70,35,10', grainA: 1.5,
     vignette: 'rgba(50,22,5,.3)', ink: '#24120a', red: '#7e1f17', petal: 'rgba(126,31,23,.85)', rim: 'rgba(255,215,170,.32)', inlay: 'rgba(222,160,95,.75)' },
+  { id: 'cherry', name: 'דובדבן', price: 450, desc: 'עץ דובדבן אדמדם עם עיגולי זהב',
+    frame: ['#5a1a14', '#2e0a07', '#4a150f'], gap: '#1a0503', surface: ['#de9474', '#b25a3c'], grain: '90,25,10', grainA: 1.3,
+    vignette: 'rgba(60,10,5,.3)', ink: '#2a0c06', red: '#f3d27a', petal: 'rgba(243,210,122,.75)', rim: 'rgba(255,210,170,.35)', inlay: 'rgba(243,210,122,.7)' },
+  { id: 'teak', name: 'טיק הודי', price: 550, desc: 'טיק כתום-חם וסימונים בכחול אינדיגו',
+    frame: ['#8a4a12', '#4c2405', '#7a3f0e'], gap: '#2a1203', surface: ['#eeb266', '#cb8132'], grain: '120,60,10', grainA: 1.2,
+    vignette: 'rgba(90,40,5,.25)', ink: '#3a1a04', red: '#2e5e9e', petal: 'rgba(46,94,158,.7)', rim: 'rgba(255,220,160,.35)', inlay: '#f0c070' },
   { id: 'marble', name: 'שיש וזהב', price: 700, desc: 'משטח שיש, מסגרת שיש ירוק וקווי זהב',
     frame: ['#2a6356', '#0f2e27', '#1f4e43'], gap: '#0a1f1a', surface: ['#eef1ef', '#cfd6d3'], grain: '0,0,0', grainA: 0, veins: '88,100,106',
     vignette: 'rgba(40,60,60,.2)', ink: '#a07a2c', red: '#1f5a4c', petal: 'rgba(160,122,44,.7)', rim: 'rgba(230,200,120,.65)', inlay: '#c9a24a', frameVeins: true },
+  { id: 'ebony', name: 'הובנה ושנהב', price: 900, desc: 'משטח שנהב, מסגרת הובנה שחורה וקווים שחורים',
+    frame: ['#262626', '#050505', '#171717'], gap: '#000', surface: ['#fbf6ea', '#e6dcc3'], grain: '120,100,70', grainA: .45,
+    vignette: 'rgba(60,50,30,.18)', ink: '#111', red: '#111', petal: 'rgba(20,20,20,.75)', rim: 'rgba(255,255,255,.35)', inlay: '#d9c08a', tiles: true },
+  { id: 'ocean', name: 'אוקיינוס', price: 1000, desc: 'לבד טורקיז עמוק עם קווים לבנים',
+    frame: ['#13698a', '#062a3c', '#0d5168'], gap: '#031520', surface: ['#3fb8cc', '#1a7f99'], grain: '0,0,0', grainA: 0, felt: true,
+    vignette: 'rgba(0,30,50,.35)', ink: '#eafcff', red: '#ff7a59', petal: 'rgba(255,122,89,.7)', rim: 'rgba(220,250,255,.55)', inlay: '#9fe7f5' },
   { id: 'jaipur', name: 'ורוד ג׳ייפור', price: 1200, desc: 'אבן חול ורודה ומסגרת אריחים כחולים',
     frame: ['#2f4a96', '#18275a', '#263c80'], gap: '#0f1838', surface: ['#f5c6b0', '#e4a18b'], grain: '160,70,60', grainA: .7,
     vignette: 'rgba(120,40,40,.2)', ink: '#3b1d33', red: '#1f3f8f', petal: 'rgba(31,63,143,.7)', rim: 'rgba(255,255,255,.5)', inlay: '#f4ead6', tiles: true },
+  { id: 'sunset', name: 'שקיעה בגואה', price: 1500, desc: 'משטח בצבעי שקיעה ומסגרת שזיף',
+    frame: ['#5b1d4a', '#2a0922', '#4a1740'], gap: '#1a0514', surface: ['#ffba6e', '#f0707f'], grain: '140,40,40', grainA: .5,
+    vignette: 'rgba(90,20,60,.3)', ink: '#4a1236', red: '#5b1d4a', petal: 'rgba(91,29,74,.6)', rim: 'rgba(255,220,200,.5)', inlay: '#ffd7a0', tiles: true },
   { id: 'royal', name: 'מלכותי', price: 2000, desc: 'לבד ירוק, מסגרת בורדו ושיבוצי זהב',
     frame: ['#6e1628', '#3a0814', '#5c1121'], gap: '#22040b', surface: ['#55a07b', '#2f6e51'], grain: '0,0,0', grainA: 0, felt: true,
-    vignette: 'rgba(0,25,12,.3)', ink: '#ecd081', red: '#b02a2a', petal: 'rgba(236,208,129,.7)', rim: 'rgba(236,208,129,.75)', inlay: '#e0bd5f', tiles: true }
+    vignette: 'rgba(0,25,12,.3)', ink: '#ecd081', red: '#b02a2a', petal: 'rgba(236,208,129,.7)', rim: 'rgba(236,208,129,.75)', inlay: '#e0bd5f', tiles: true },
+  { id: 'neon', name: 'לילה ניאון', price: 2500, desc: 'לוח לילה כהה עם קווים זוהרים',
+    frame: ['#20264a', '#07081a', '#161b38'], gap: '#000', surface: ['#1d2548', '#0c1028'], grain: '0,0,0', grainA: 0,
+    vignette: 'rgba(0,0,0,.4)', ink: '#59f3ff', red: '#ff3fb0', petal: 'rgba(255,63,176,.55)', rim: 'rgba(89,243,255,.85)', inlay: '#ff3fb0', glow: true },
+  { id: 'diamond', name: 'יהלום', price: 3500, desc: 'שיש לבן, מסגרת כסף ואבני חן כחולות',
+    frame: ['#eef2f7', '#9aa6b5', '#d2d9e3'], gap: '#5c6573', surface: ['#ffffff', '#e3e8ef'], grain: '0,0,0', grainA: 0, veins: '150,160,175',
+    vignette: 'rgba(80,90,110,.18)', ink: '#5b6b85', red: '#4f9df5', petal: 'rgba(79,157,245,.55)', rim: 'rgba(255,255,255,.85)', inlay: '#4f9df5', tiles: true, frameVeins: true }
 ];
 const skinById = id => SKINS.find(s => s.id === id) || SKINS[0];
 function drawBoardImage() {
@@ -964,6 +1013,7 @@ function drawBoard(canvas, skin) {
   g.restore();
   // markings
   const INK = skin.ink, RED = skin.red;
+  if (skin.glow) { g.shadowColor = skin.ink; g.shadowBlur = 9; }
   g.strokeStyle = INK; g.lineWidth = 2.2;
   for (let s = 0; s < 4; s++) {
     g.save(); g.rotate(s * Math.PI / 2);
@@ -988,6 +1038,7 @@ function drawBoard(canvas, skin) {
     g.fillStyle = p % 2 ? skin.petal : 'rgba(0,0,0,.08)'; g.fill(); g.lineWidth = 1.1; g.stroke(); g.restore();
   }
   g.lineWidth = 2; g.beginPath(); g.arc(0, 0, 21.5, 0, 2 * Math.PI); g.fillStyle = RED; g.fill(); g.stroke();
+  g.shadowBlur = 0;
   // pockets
   for (const [px, py] of POCKETS) {
     const pg = g.createRadialGradient(px - px * .01, py - py * .01, 3, px, py, POCKET_DRAW);
@@ -1006,21 +1057,51 @@ const COIN_SETS = [
     w: { g: ['#fff4c9', '#f1c75b', '#c08a1e'], rim: '#7a5510', ring: 'rgba(120,70,0,.25)' },
     b: { g: ['#86b8f2', '#2b5fae', '#122e63'], rim: '#0a1a3a', ring: 'rgba(255,255,255,.2)' },
     q: { g: ['#ffb19a', '#f0553e', '#a8261a'], rim: '#5a1006', ring: 'rgba(0,0,0,.18)' } },
+  { id: 'c-forest', name: 'יער', price: 300, desc: 'ירוק עלים מול חום של גזע, מלכה כתומה', labels: ['ירוקים', 'חומים'],
+    w: { g: ['#dcf7b6', '#93d15e', '#4f8f2a'], rim: '#2e5a14', ring: 'rgba(0,0,0,.2)' },
+    b: { g: ['#c0936a', '#7a4f2a', '#43260f'], rim: '#20110a', ring: 'rgba(255,255,255,.18)' },
+    q: { g: ['#ffd36b', '#f0a020', '#a86400'], rim: '#5a3400', ring: 'rgba(0,0,0,.2)' } },
+  { id: 'c-fire', name: 'אש וקרח', price: 450, desc: 'כחול קפוא מול אדום בוער', labels: ['כחולי קרח', 'אדומי אש'],
+    w: { g: ['#ffffff', '#c2e7ff', '#6fb6ef'], rim: '#2f6ea0', ring: 'rgba(30,80,140,.3)', shine: true },
+    b: { g: ['#ffb36b', '#f2552c', '#9c1f0a'], rim: '#4a0a02', ring: 'rgba(255,230,180,.3)' },
+    q: { g: ['#fff0a0', '#ffd23a', '#c08a00'], rim: '#6a4800', ring: 'rgba(0,0,0,.2)' } },
+  { id: 'c-candy', name: 'סוכריות', price: 550, desc: 'ורוד מסטיק מול ירוק מנטה', labels: ['ורודים', 'מנטה'],
+    w: { g: ['#ffe3f0', '#ff9cc8', '#e2559a'], rim: '#9a2a62', ring: 'rgba(255,255,255,.45)', shine: true },
+    b: { g: ['#e3fff4', '#8ef0cf', '#2fbf95'], rim: '#14705a', ring: 'rgba(255,255,255,.5)', shine: true },
+    q: { g: ['#fff6a8', '#ffd84a', '#e0a000'], rim: '#7a5600', ring: 'rgba(255,255,255,.45)', shine: true } },
   { id: 'c-gems', name: 'אבני חן', price: 600, desc: 'פנינים מול אזמרגדים, מלכה מאודם', labels: ['פנינים', 'אזמרגדים'],
     w: { g: ['#ffffff', '#eef0f8', '#c3c8dc'], rim: '#8a8fb0', ring: 'rgba(214,120,200,.4)', shine: true },
     b: { g: ['#8ff0c0', '#1fa56a', '#0a5234'], rim: '#04301d', ring: 'rgba(255,255,255,.28)', shine: true },
     q: { g: ['#ff9aa8', '#e0193f', '#7d0620'], rim: '#40020f', ring: 'rgba(255,255,255,.3)', shine: true } },
+  { id: 'c-lava', name: 'לבה', price: 900, desc: 'לבה זוהרת מול בזלת עם שוליים בוערים', labels: ['לבה', 'בזלת'],
+    w: { g: ['#fff2a8', '#ff9a2e', '#d2400c'], rim: '#6a1a02', ring: 'rgba(120,20,0,.3)' },
+    b: { g: ['#5a5a62', '#2a2a30', '#0e0e12'], rim: '#ff6a1a', rimW: 2.2, ring: 'rgba(255,106,26,.45)' },
+    q: { g: ['#ffffff', '#ffe0a0', '#ffb030'], rim: '#a85800', ring: 'rgba(160,80,0,.3)' } },
   { id: 'c-royal', name: 'שנהב ואובסידיאן', price: 1000, desc: 'שוליים מזהב טהור', labels: ['שנהב', 'אובסידיאן'],
     w: { g: ['#fffdf5', '#f1e6cc', '#d6c39a'], rim: '#c99a2e', rimW: 2.6, ring: 'rgba(201,154,46,.6)' },
     b: { g: ['#4a4a55', '#1a1a22', '#050508'], rim: '#e0b84a', rimW: 2.6, ring: 'rgba(224,184,74,.55)' },
-    q: { g: ['#ffd27a', '#d4302a', '#7a0c0c'], rim: '#f2c94c', rimW: 2.6, ring: 'rgba(242,201,76,.6)' } }
+    q: { g: ['#ffd27a', '#d4302a', '#7a0c0c'], rim: '#f2c94c', rimW: 2.6, ring: 'rgba(242,201,76,.6)' } },
+  { id: 'c-galaxy', name: 'גלקסיה', price: 1300, desc: 'כוכבים כסופים מול ערפיליות סגולות', labels: ['כוכבים', 'ערפיליות'],
+    w: { g: ['#ffffff', '#d9dcff', '#9aa2e6'], rim: '#5b62b5', ring: 'rgba(90,100,200,.35)', shine: true },
+    b: { g: ['#b07cff', '#5a2bb0', '#1e0a4a'], rim: '#0b0320', ring: 'rgba(255,200,255,.3)', shine: true },
+    q: { g: ['#ffb0f0', '#ff4fc0', '#9a0f78'], rim: '#4a0038', ring: 'rgba(255,255,255,.35)', shine: true } },
+  { id: 'c-goldsilver', name: 'זהב וכסף', price: 2000, desc: 'כסף מלוטש מול זהב, מלכה עם שוליים מוזהבים', labels: ['כסופים', 'זהובים'],
+    w: { g: ['#ffffff', '#dfe5ec', '#9aa6b5'], rim: '#5c6573', rimW: 2.4, ring: 'rgba(80,90,110,.4)', shine: true },
+    b: { g: ['#fff5c2', '#f0c24a', '#a8740f'], rim: '#5e3e05', rimW: 2.4, ring: 'rgba(94,62,5,.45)', shine: true },
+    q: { g: ['#ffd0d0', '#ff3b3b', '#9a0a0a'], rim: '#f2c94c', rimW: 2.6, ring: 'rgba(242,201,76,.6)', shine: true } }
 ];
 const STRIKERS = [
   { id: 's-classic', name: 'קלאסי', price: 0, desc: 'שנהב עם טבעות זעפרן', g: ['#ffffff', '#f3ecdc', '#d3c39f'], rim: '#8f7d5a', style: 'classic' },
   { id: 's-sun', name: 'שמש', price: 200, desc: 'כתום חם עם קרני אור', g: ['#fff3b0', '#ffb92e', '#e0701a'], rim: '#8a3c08', style: 'rays' },
+  { id: 's-ice', name: 'קרח', price: 400, desc: 'כחול קפוא עם פתית שלג', g: ['#ffffff', '#d6f1ff', '#8fcdf2'], rim: '#3a7fb0', style: 'snow', shine: true },
   { id: 's-galaxy', name: 'גלקסיה', price: 500, desc: 'סגול עמוק מלא כוכבים', g: ['#9a7bff', '#3b1f8f', '#120a33'], rim: '#07041a', style: 'stars' },
+  { id: 's-mandala', name: 'מנדלה', price: 700, desc: 'שמנת חמה עם מנדלה מצוירת', g: ['#fff8e8', '#ffe2b0', '#f0b060'], rim: '#8a4a10', style: 'mandala' },
   { id: 's-lotus', name: 'לוטוס', price: 900, desc: 'לבן עם עלי כותרת ורודים', g: ['#ffffff', '#fde8f0', '#efc0d4'], rim: '#a05a7a', style: 'petals' },
-  { id: 's-gold', name: 'זהב', price: 1500, desc: 'זהב מלוטש עם חריטה', g: ['#fff5c2', '#f0c24a', '#a8740f'], rim: '#5e3e05', rimW: 2.4, style: 'engraved' }
+  { id: 's-ruby', name: 'אודם', price: 1000, desc: 'אבן אדומה מלוטשת בפאות', g: ['#ff9aa0', '#e0203a', '#7a0618'], rim: '#3a0008', rimW: 2.2, style: 'facets', shine: true },
+  { id: 's-tiger', name: 'נמר', price: 1200, desc: 'כתום בוער עם פסי נמר', g: ['#ffd27a', '#f29a1e', '#b85c06'], rim: '#3a1a00', style: 'stripes' },
+  { id: 's-gold', name: 'זהב', price: 1500, desc: 'זהב מלוטש עם חריטה', g: ['#fff5c2', '#f0c24a', '#a8740f'], rim: '#5e3e05', rimW: 2.4, style: 'engraved' },
+  { id: 's-peacock', name: 'טווס', price: 1600, desc: 'טורקיז עם עין של נוצת טווס', g: ['#7af0e0', '#1aa7a0', '#0b4f6a'], rim: '#05303f', style: 'feather' },
+  { id: 's-diamond', name: 'יהלום', price: 3000, desc: 'יהלום שקוף ומנצנץ בפאות', g: ['#ffffff', '#e8f4ff', '#b8d4f0'], rim: '#6fa0d0', rimW: 2, style: 'facets', shine: true }
 ];
 const coinSetById = id => COIN_SETS.find(s => s.id === id) || COIN_SETS[0];
 const strikerById = id => STRIKERS.find(s => s.id === id) || STRIKERS[0];
@@ -1031,32 +1112,31 @@ function renderDisc(spec, r, px, style) {
   const gr = g.createRadialGradient(-r * .35, -r * .4, r * .1, 0, 0, r);
   gr.addColorStop(0, spec.g[0]); gr.addColorStop(.55, spec.g[1]); gr.addColorStop(1, spec.g[2]);
   g.beginPath(); g.arc(0, 0, r, 0, 2 * Math.PI); g.fillStyle = gr; g.fill();
-  const rw = spec.rimW || 1.4;
-  g.globalAlpha = spec.rimW ? 1 : .6; g.lineWidth = rw; g.strokeStyle = spec.rim;
-  g.beginPath(); g.arc(0, 0, r - rw / 2, 0, 2 * Math.PI); g.stroke(); g.globalAlpha = 1;
-  if (style) strikerPattern(g, r, style);
-  else { g.lineWidth = 1.1; g.strokeStyle = spec.ring; for (const f of [.74, .46]) { g.beginPath(); g.arc(0, 0, r * f, 0, 2 * Math.PI); g.stroke(); } }
-  g.beginPath(); g.ellipse(-r * .3, -r * .38, r * .36, r * .18, -.5, 0, 2 * Math.PI); g.fillStyle = 'rgba(255,255,255,.2)'; g.fill();
-  if (spec.shine) { g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.arc(-r * .42, -r * .44, r * .08, 0, 2 * Math.PI); g.fill(); }
+  if (style) { g.save(); g.beginPath(); g.arc(0, 0, r - .5, 0, 2 * Math.PI); g.clip(); strikerPattern(g, r, style); g.restore(); }
+  else { g.lineWidth = 1.2; g.strokeStyle = spec.ring; for (const f of [.74, .46]) { g.beginPath(); g.arc(0, 0, r * f, 0, 2 * Math.PI); g.stroke(); } }
+  // a crisp rim and a dark outer edge so every piece stands out from the board
+  const rw = spec.rimW || 1.6;
+  g.lineWidth = rw; g.strokeStyle = spec.rim; g.beginPath(); g.arc(0, 0, r - rw / 2 - .8, 0, 2 * Math.PI); g.stroke();
+  g.lineWidth = 1.6; g.strokeStyle = 'rgba(0,0,0,.55)'; g.beginPath(); g.arc(0, 0, r - .8, 0, 2 * Math.PI); g.stroke();
+  g.beginPath(); g.ellipse(-r * .3, -r * .38, r * .36, r * .18, -.5, 0, 2 * Math.PI); g.fillStyle = 'rgba(255,255,255,.24)'; g.fill();
+  if (spec.shine) { g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.arc(-r * .42, -r * .44, r * .08, 0, 2 * Math.PI); g.fill(); }
   return c;
 }
 function strikerPattern(g, r, style) {
   const TAU = 2 * Math.PI;
   const ring = (f, w, col) => { g.lineWidth = w; g.strokeStyle = col; g.beginPath(); g.arc(0, 0, r * f, 0, TAU); g.stroke(); };
+  const dot = (x, y, rr, col) => { g.fillStyle = col; g.beginPath(); g.arc(x, y, rr, 0, TAU); g.fill(); };
   if (style === 'classic') {
-    ring(.74, 3.2, '#e99b2b'); ring(.46, 2, '#c43d2a'); g.fillStyle = '#1e3158';
-    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; g.beginPath(); g.arc(Math.cos(a) * r * .6, Math.sin(a) * r * .6, 1.7, 0, TAU); g.fill(); }
-    g.beginPath(); g.arc(0, 0, 3, 0, TAU); g.fill();
+    ring(.74, 3.2, '#e99b2b'); ring(.46, 2, '#c43d2a');
+    for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; dot(Math.cos(a) * r * .6, Math.sin(a) * r * .6, 1.7, '#1e3158'); }
+    dot(0, 0, 3, '#1e3158');
   } else if (style === 'rays') {
     g.strokeStyle = 'rgba(150,55,5,.6)'; g.lineWidth = 2.2; g.lineCap = 'round';
     for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; g.beginPath(); g.moveTo(Math.cos(a) * r * .36, Math.sin(a) * r * .36); g.lineTo(Math.cos(a) * r * .8, Math.sin(a) * r * .8); g.stroke(); }
-    g.beginPath(); g.arc(0, 0, r * .26, 0, TAU); g.fillStyle = '#fff6c8'; g.fill(); ring(.26, 1.6, 'rgba(150,55,5,.7)');
+    dot(0, 0, r * .26, '#fff6c8'); ring(.26, 1.6, 'rgba(150,55,5,.7)');
   } else if (style === 'stars') {
     const rnd = rng(5); ring(.8, 1.6, 'rgba(200,180,255,.55)');
-    for (let i = 0; i < 18; i++) {
-      const a = rnd() * TAU, d = Math.sqrt(rnd()) * r * .85;
-      g.fillStyle = `rgba(255,255,255,${.5 + rnd() * .5})`; g.beginPath(); g.arc(Math.cos(a) * d, Math.sin(a) * d, .5 + rnd() * 1.4, 0, TAU); g.fill();
-    }
+    for (let i = 0; i < 18; i++) { const a = rnd() * TAU, d = Math.sqrt(rnd()) * r * .85; dot(Math.cos(a) * d, Math.sin(a) * d, .5 + rnd() * 1.4, `rgba(255,255,255,${.5 + rnd() * .5})`); }
     g.fillStyle = '#fff'; g.beginPath();
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 - Math.PI / 2, d = i % 2 ? r * .1 : r * .32; g.lineTo(Math.cos(a) * d, Math.sin(a) * d); }
     g.closePath(); g.fill();
@@ -1066,12 +1146,58 @@ function strikerPattern(g, r, style) {
       g.quadraticCurveTo(r * .5, -r * .24, r * .8, 0); g.quadraticCurveTo(r * .5, r * .24, r * .18, 0);
       g.fillStyle = 'rgba(232,105,155,.55)'; g.fill(); g.lineWidth = 1; g.strokeStyle = 'rgba(160,60,100,.6)'; g.stroke(); g.restore();
     }
-    g.beginPath(); g.arc(0, 0, r * .16, 0, TAU); g.fillStyle = '#f2b636'; g.fill();
+    dot(0, 0, r * .16, '#f2b636');
   } else if (style === 'engraved') {
     ring(.84, 1.4, 'rgba(94,62,5,.55)'); ring(.66, 2.4, 'rgba(94,62,5,.45)'); ring(.44, 1.2, 'rgba(94,62,5,.55)');
     g.strokeStyle = 'rgba(94,62,5,.5)'; g.lineWidth = 1.2;
     for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; g.beginPath(); g.moveTo(Math.cos(a) * r * .68, Math.sin(a) * r * .68); g.lineTo(Math.cos(a) * r * .82, Math.sin(a) * r * .82); g.stroke(); }
-    g.beginPath(); g.arc(0, 0, r * .2, 0, TAU); g.fillStyle = '#fff5c2'; g.fill();
+    dot(0, 0, r * .2, '#fff5c2');
+  } else if (style === 'snow') {
+    g.strokeStyle = 'rgba(40,110,170,.75)'; g.lineWidth = 1.8; g.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      g.save(); g.rotate(i * Math.PI / 3);
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(r * .78, 0); g.stroke();
+      for (const d of [.38, .58]) { g.beginPath(); g.moveTo(r * d, 0); g.lineTo(r * (d + .14), -r * .13); g.moveTo(r * d, 0); g.lineTo(r * (d + .14), r * .13); g.stroke(); }
+      g.restore();
+    }
+    dot(0, 0, r * .1, '#ffffff');
+  } else if (style === 'mandala') {
+    for (let i = 0; i < 12; i++) {
+      g.save(); g.rotate(i * Math.PI / 6); g.beginPath(); g.moveTo(r * .5, 0);
+      g.quadraticCurveTo(r * .68, -r * .12, r * .86, 0); g.quadraticCurveTo(r * .68, r * .12, r * .5, 0);
+      g.fillStyle = i % 2 ? 'rgba(200,70,40,.6)' : 'rgba(40,90,160,.55)'; g.fill(); g.restore();
+    }
+    for (let i = 0; i < 8; i++) {
+      g.save(); g.rotate(i * Math.PI / 4 + Math.PI / 8); g.beginPath(); g.moveTo(r * .16, 0);
+      g.quadraticCurveTo(r * .3, -r * .1, r * .44, 0); g.quadraticCurveTo(r * .3, r * .1, r * .16, 0);
+      g.fillStyle = 'rgba(200,120,20,.7)'; g.fill(); g.restore();
+    }
+    ring(.48, 1, 'rgba(120,60,10,.5)');
+    dot(0, 0, r * .12, '#c8461e');
+  } else if (style === 'facets') {
+    const n = 8, inner = [], outer = [];
+    for (let i = 0; i < n; i++) { const a = i * TAU / n + Math.PI / 8; inner.push([Math.cos(a) * r * .46, Math.sin(a) * r * .46]); }
+    for (let i = 0; i < n * 2; i++) { const a = i * TAU / (n * 2); outer.push([Math.cos(a) * r, Math.sin(a) * r]); }
+    for (let i = 0; i < n; i++) {
+      const p = inner[i], q = inner[(i + 1) % n], o = outer[(2 * i + 1) % (2 * n)];
+      g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(o[0], o[1]); g.lineTo(q[0], q[1]); g.closePath();
+      g.fillStyle = i % 2 ? 'rgba(255,255,255,.28)' : 'rgba(0,0,0,.12)'; g.fill();
+    }
+    g.beginPath(); inner.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
+    g.fillStyle = 'rgba(255,255,255,.22)'; g.fill(); g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,.6)'; g.stroke();
+    g.beginPath(); for (let i = 0; i < n; i++) { g.moveTo(inner[i][0], inner[i][1]); g.lineTo(outer[(2 * i + 1) % (2 * n)][0], outer[(2 * i + 1) % (2 * n)][1]); } g.stroke();
+  } else if (style === 'stripes') {
+    g.fillStyle = 'rgba(30,14,2,.85)';
+    for (let i = 0; i < 7; i++) {
+      const a = i * TAU / 7 + .3; g.save(); g.rotate(a); g.beginPath();
+      g.moveTo(r * 1.05, -r * .1); g.quadraticCurveTo(r * .65, -r * .02, r * .38, r * .08); g.quadraticCurveTo(r * .7, r * .05, r * 1.05, r * .12); g.closePath(); g.fill(); g.restore();
+    }
+    dot(0, 0, r * .2, 'rgba(255,240,200,.9)');
+  } else if (style === 'feather') {
+    g.strokeStyle = 'rgba(10,60,70,.45)'; g.lineWidth = .9;
+    for (let i = 0; i < 36; i++) { const a = i * TAU / 36; g.beginPath(); g.moveTo(Math.cos(a) * r * .5, Math.sin(a) * r * .5); g.lineTo(Math.cos(a) * r, Math.sin(a) * r); g.stroke(); }
+    const eye = [[.5, '#f2c84b'], [.38, '#1fa25a'], [.27, '#0e5fae'], [.15, '#08214a']];
+    for (const [f, col] of eye) { g.beginPath(); g.ellipse(0, r * .04, r * f, r * f * 1.18, 0, 0, TAU); g.fillStyle = col; g.fill(); }
   }
 }
 function makeSprites() {
@@ -1083,7 +1209,7 @@ function makeSprites() {
 }
 function drawDisc(kind, x, y, sh, alpha, sc) {
   const r = (kind === 's' ? R_S : R_C) * (sc || 1), pad = 2 * (sc || 1);
-  ctx.globalAlpha = (alpha == null ? 1 : alpha) * .3; ctx.fillStyle = '#000';
+  ctx.globalAlpha = (alpha == null ? 1 : alpha) * .42; ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.arc(x + sh[0], y + sh[1], r, 0, 2 * Math.PI); ctx.fill();
   ctx.globalAlpha = alpha == null ? 1 : alpha;
   ctx.drawImage(sprites[kind], x - r - pad, y - r - pad, 2 * (r + pad), 2 * (r + pad));
@@ -1356,6 +1482,7 @@ function cleanWallet(d) {
     equip: { board: pick(e.board, pick(o.skin, 'classic')), coins: pick(e.coins, 'c-classic'), striker: pick(e.striker, 's-classic') },
     wins: Number.isFinite(o.wins) ? Math.max(0, Math.floor(o.wins)) : 0, games: Number.isFinite(o.games) ? Math.max(0, Math.floor(o.games)) : 0,
     daily: typeof o.daily === 'string' ? o.daily : null,
+    boxes: Array.isArray(o.boxes) ? o.boxes.filter(x => ['green', 'blue', 'purple', 'gold'].includes(x)).slice(0, 30) : [],
     mission: o.mission && typeof o.mission === 'object' && typeof o.mission.day === 'string'
       ? { day: o.mission.day, got: Number.isFinite(o.mission.got) ? o.mission.got : 0, done: !!o.mission.done } : null
   };
@@ -1372,7 +1499,7 @@ ACC.ready = (async () => {
 function walletBody() {
   const d = W$.data;
   return { coins: d.coins, owned: d.owned.slice(), equip: Object.assign({}, d.equip), wins: d.wins, games: d.games,
-    daily: d.daily, mission: d.mission ? Object.assign({}, d.mission) : null, t: Date.now() };
+    daily: d.daily, mission: d.mission ? Object.assign({}, d.mission) : null, boxes: d.boxes.slice(), t: Date.now() };
 }
 function saveWallet() {
   store.set('wallet', W$.data);
@@ -1495,8 +1622,8 @@ function settleBet() {
   if (!b || b.paid || b.gid !== st.gid || st.winner === null) return;
   b.paid = true; b.won = st.winner === G.myTeam;
   W$.data.games += 1;
-  if (b.won) { W$.data.wins += 1; W$.data.coins += b.share; }
-  if (b.won && b.box) b.reward = grantBox(b.box); else saveWallet();
+  if (b.won) { W$.data.wins += 1; W$.data.coins += b.share; if (b.box) W$.data.boxes.push(b.box); }
+  saveWallet();
 }
 
 /* ---------------- stake tables, boxes, daily bonus and daily mission ---------------- */
@@ -1508,12 +1635,93 @@ const ARENAS = [
   { id: 'kolkata',  name: 'קולקטה',        sub: 'אולם האלופים',      fee: 1000, prize: 2000, level: 'hard',    stars: 5, box: 'gold',   a: ['#8048d8', '#36137a'] },
   { id: 'maharaja', name: 'ארמון המהרג׳ה', sub: 'רק לאלופים',        fee: 2500, prize: 5000, level: 'master',  stars: 6, box: 'gold',   a: ['#d9a521', '#6e4a00'] }
 ];
+// skins inside a box are rare on purpose; coins are the usual prize
 const BOXES = {
-  green:  { name: 'תיבה ירוקה', c: ['#62de8d', '#1d7a3e'], coins: [30, 80],    item: .06, max: 300 },
-  blue:   { name: 'תיבה כחולה', c: ['#6cb4ff', '#1f4fa8'], coins: [80, 200],   item: .14, max: 700 },
-  purple: { name: 'תיבה סגולה', c: ['#c590ff', '#5a2aa8'], coins: [200, 450],  item: .28, max: 1200 },
-  gold:   { name: 'תיבת זהב',   c: ['#ffe07a', '#b8860b'], coins: [450, 1000], item: .5,  max: 1e9 }
+  green:  { name: 'תיבה ירוקה', coins: [30, 80],    item: .01, max: 400 },
+  blue:   { name: 'תיבה כחולה', coins: [80, 200],   item: .02, max: 900 },
+  purple: { name: 'תיבה סגולה', coins: [200, 450],  item: .04, max: 1500 },
+  gold:   { name: 'תיבת זהב',   coins: [450, 1000], item: .08, max: 1e9 }
 };
+const SILVER = ['#ffffff', '#c3cad3', '#6b7480'], GOLDTRIM = ['#fff2b8', '#e0ac34', '#7a4e08'], BRONZE = ['#d9a24a', '#7a4d12', '#2e1a03'];
+const CHEST = {
+  green:  { face: ['#7cf0a0', '#22a552', '#0d5a2a'], side: ['#18803c', '#0a4520'], top: ['#a6ffc2', '#3cc46e'], trim: SILVER,   gem: ['#eafff0', '#38d977', '#0b6b30'] },
+  blue:   { face: ['#8fcaff', '#2f7be0', '#123a86'], side: ['#1f5fc0', '#0c2c66'], top: ['#b8e0ff', '#4b95f0'], trim: SILVER,   gem: ['#eaf6ff', '#4aa8ff', '#0b3d8a'] },
+  purple: { face: ['#ddb2ff', '#8a4be8', '#3e1485'], side: ['#6a2ed0', '#2c0b66'], top: ['#ecd4ff', '#a26cf2'], trim: GOLDTRIM, gem: ['#ffe8f8', '#ff5cc8', '#8a0a6a'] },
+  gold:   { face: ['#fff3b0', '#f2c230', '#a46a00'], side: ['#d69a14', '#7a4a00'], top: ['#fff8d0', '#ffd65a'], trim: BRONZE,   gem: ['#ffe0e0', '#ff3040', '#7a0010'] }
+};
+// a chest in 3/4 view, drawn on a canvas; st = { lid: 0..1 open, shake: radians, glow: 0..1, rays: radians }
+function drawChest(g, S, tier, st) {
+  const P = CHEST[tier], k = S / 200, TAU = 2 * Math.PI;
+  st = st || {};
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, S, S); g.setTransform(k, 0, 0, k, 0, 0);
+  const lin = (x0, y0, x1, y1, stops) => { const gr = g.createLinearGradient(x0, y0, x1, y1); stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c)); return gr; };
+  const poly = pts => { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); };
+  const glow = st.glow || 0;
+  if (glow > 0) {
+    g.save(); g.translate(100, 88); g.rotate(st.rays || 0);
+    for (let i = 0; i < 16; i++) { g.rotate(TAU / 16); g.beginPath(); g.moveTo(0, 0); g.lineTo(120, -11); g.lineTo(120, 11); g.closePath(); g.fillStyle = `rgba(255,236,170,${.16 * glow})`; g.fill(); }
+    g.restore();
+    const rg = g.createRadialGradient(100, 90, 4, 100, 90, 95); rg.addColorStop(0, `rgba(255,248,210,${.95 * glow})`); rg.addColorStop(1, 'rgba(255,220,120,0)');
+    g.fillStyle = rg; g.fillRect(0, 0, 200, 200);
+  }
+  g.beginPath(); g.ellipse(106, 178, 74, 11, 0, 0, TAU); g.fillStyle = 'rgba(0,0,0,.35)'; g.fill();
+  g.save(); g.translate(100, 168); g.rotate(st.shake || 0); g.translate(-100, -168);
+  const L = 34, R = 144, T = 104, B = 168, dx = 26, dy = -15, LH = 30;
+  const trimStroke = (pts, w) => { poly(pts); g.lineJoin = 'round'; g.lineWidth = w + 3; g.strokeStyle = 'rgba(0,0,0,.45)'; g.stroke(); g.lineWidth = w; g.strokeStyle = lin(0, 60, 0, 180, P.trim); g.stroke(); };
+  const rivet = (x, y) => { g.beginPath(); g.arc(x, y, 2.6, 0, TAU); g.fillStyle = P.trim[0]; g.fill(); g.lineWidth = .8; g.strokeStyle = 'rgba(0,0,0,.4)'; g.stroke(); };
+  const cap = (x, y) => { g.fillStyle = lin(x, y - 8, x, y + 8, P.trim); g.fillRect(x - 8, y - 8, 16, 16); g.lineWidth = 1.2; g.strokeStyle = 'rgba(0,0,0,.45)'; g.strokeRect(x - 8, y - 8, 16, 16); rivet(x, y); };
+  // body
+  poly([[R, T], [R + dx, T + dy], [R + dx, B + dy], [R, B]]); g.fillStyle = lin(R, T, R + dx, B, P.side); g.fill();
+  poly([[L, T], [R, T], [R, B], [L, B]]); g.fillStyle = lin(0, T, 0, B, P.face); g.fill();
+  poly([[L, T], [R, T], [R, T + 20], [L, T + 20]]); g.fillStyle = 'rgba(255,255,255,.18)'; g.fill();
+  // inside, seen once the lid lifts
+  const lid = st.lid || 0;
+  if (lid > 0) {
+    poly([[L, T], [L + dx, T + dy], [R + dx, T + dy], [R, T]]);
+    const ig = g.createLinearGradient(0, T + dy, 0, T); ig.addColorStop(0, '#1a0f05'); ig.addColorStop(1, `rgba(255,214,110,${.6 + .4 * glow})`);
+    g.fillStyle = ig; g.fill();
+  }
+  // vertical bands, edges, corners and the emblem on the body
+  for (const x of [L + 22, R - 22]) { g.fillStyle = lin(x - 5, 0, x + 5, 0, P.trim); g.fillRect(x - 5, T, 10, B - T); }
+  trimStroke([[L, T], [R, T], [R, B], [L, B]], 5);
+  trimStroke([[R, T], [R + dx, T + dy], [R + dx, B + dy], [R, B]], 4);
+  for (const [x, y] of [[L, B], [R, B]]) cap(x, y);
+  cap(R + dx, B + dy);
+  const ex = (L + R) / 2, ey = 140;
+  g.beginPath(); g.arc(ex, ey, 19, 0, TAU); g.fillStyle = lin(0, ey - 19, 0, ey + 19, P.trim); g.fill(); g.lineWidth = 1.4; g.strokeStyle = 'rgba(0,0,0,.45)'; g.stroke();
+  const gg = g.createRadialGradient(ex - 4, ey - 5, 1, ex, ey, 13); gg.addColorStop(0, P.gem[0]); gg.addColorStop(.5, P.gem[1]); gg.addColorStop(1, P.gem[2]);
+  g.beginPath(); g.arc(ex, ey, 13, 0, TAU); g.fillStyle = gg; g.fill();
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath();
+  for (let i = 0; i < 16; i++) { const a = i * TAU / 16 - Math.PI / 2, d = i % 2 ? 3 : 8; g.lineTo(ex + Math.cos(a) * d, ey + Math.sin(a) * d); }
+  g.closePath(); g.fill();
+  // lid (lifts and tips back around its rear hinge)
+  g.save();
+  if (lid > 0) { g.translate(L + dx, T + dy - LH); g.translate(0, -lid * 34); g.rotate(-lid * .32); g.translate(-(L + dx), -(T + dy - LH)); }
+  const LT = T - LH;
+  poly([[R, LT], [R + dx, LT + dy], [R + dx, T + dy], [R, T]]); g.fillStyle = lin(R, LT, R + dx, T, P.side); g.fill();
+  poly([[L, LT], [L + dx, LT + dy], [R + dx, LT + dy], [R, LT]]); g.fillStyle = lin(0, LT + dy, 0, LT, P.top); g.fill();
+  poly([[L + 10, LT - 3], [L + dx + 2, LT + dy + 3], [R + dx - 10, LT + dy + 3], [R - 2, LT - 3]]); g.fillStyle = 'rgba(255,255,255,.22)'; g.fill();
+  poly([[L, LT], [R, LT], [R, T], [L, T]]); g.fillStyle = lin(0, LT, 0, T, P.face); g.fill();
+  poly([[L, LT], [R, LT], [R, LT + 11], [L, LT + 11]]); g.fillStyle = 'rgba(255,255,255,.22)'; g.fill();
+  for (const x of [L + 22, R - 22]) { g.fillStyle = lin(x - 5, 0, x + 5, 0, P.trim); g.fillRect(x - 5, LT, 10, LH); poly([[x - 5, LT], [x - 5 + dx, LT + dy], [x + 5 + dx, LT + dy], [x + 5, LT]]); g.fill(); }
+  trimStroke([[L, LT], [R, LT], [R, T], [L, T]], 5);
+  trimStroke([[L, LT], [L + dx, LT + dy], [R + dx, LT + dy], [R, LT]], 4);
+  trimStroke([[R, LT], [R + dx, LT + dy], [R + dx, T + dy], [R, T]], 4);
+  for (const [x, y] of [[L, LT], [R, LT], [L, T], [R, T]]) cap(x, y);
+  cap(R + dx, LT + dy);
+  // lock plate
+  g.fillStyle = lin(0, T - 14, 0, T + 12, P.trim); g.fillRect(ex - 10, T - 14, 20, 24);
+  g.lineWidth = 1.4; g.strokeStyle = 'rgba(0,0,0,.5)'; g.strokeRect(ex - 10, T - 14, 20, 24);
+  g.fillStyle = 'rgba(20,10,0,.85)'; g.beginPath(); g.arc(ex, T - 4, 3.4, 0, TAU); g.fill(); g.fillRect(ex - 1.6, T - 3, 3.2, 8);
+  g.restore();
+  g.restore();
+}
+function chestCanvas(tier, css, st) {
+  const c = document.createElement('canvas'), d = Math.min(3, window.devicePixelRatio || 1);
+  c.width = c.height = Math.round(css * d); c.style.width = c.style.height = css + 'px'; c.className = 'chestcv';
+  drawChest(c.getContext('2d'), c.width, tier, st || {});
+  return c;
+}
 const CAT_NAME = { board: 'לוח', coins: 'סט דיסקיות', striker: 'סטרייקר' };
 const allItems = () => [...SKINS.map(s => ({ s, cat: 'board' })), ...COIN_SETS.map(s => ({ s, cat: 'coins' })), ...STRIKERS.map(s => ({ s, cat: 'striker' }))];
 function rollBox(tier) {
@@ -1525,33 +1733,65 @@ function rollBox(tier) {
   }
   return { tier, coins: Math.max(5, Math.round(coins / 5) * 5), item };
 }
-// the box's contents go straight into the wallet; the box screen only reveals them
-function grantBox(tier) {
+// open the oldest waiting box: its contents go straight into the wallet
+function openNextBox() {
+  const tier = W$.data.boxes[0]; if (!tier) return null;
   const r = rollBox(tier);
+  W$.data.boxes.shift();
   W$.data.coins += r.coins;
   if (r.item) W$.data.owned.push(r.item.s.id);
   saveWallet();
   return r;
 }
-function miniBox(tier) { const b = BOXES[tier]; return el('span', { class: 'minibox', style: `--c1:${b.c[0]};--c2:${b.c[1]}` }); }
-function chestView(r) {
-  const B = BOXES[r.tier];
-  const chest = el('button', { class: 'chest', type: 'button', style: `--c1:${B.c[0]};--c2:${B.c[1]}`, 'aria-label': 'לפתוח את ה' + B.name },
-    el('span', { class: 'glow' }), el('span', { class: 'body' }), el('span', { class: 'lid' }), el('span', { class: 'lock' }));
-  const hint = el('p', { class: 'note', text: 'לחץ על התיבה כדי לפתוח' });
-  const items = [el('div', { class: 'reward' }, el('span', { class: 'coin' }), `+${r.coins}`, el('small', { text: 'מטבעות' }))];
-  if (r.item) items.push(el('div', { class: 'reward' }, skinPreview(r.item.cat, r.item.s), r.item.s.name, el('small', { text: CAT_NAME[r.item.cat] + ' חדש!' })));
-  const rewards = el('div', { class: 'rewards' }, items);
+// boxes you won wait for you in the lobby; you open them there, one at a time
+function showBoxOpen() {
+  const tier = W$.data.boxes[0];
+  if (!tier) { showHome(); return; }
+  const cv = chestCanvas(tier, 230);
+  const g = cv.getContext('2d'), S = cv.width;
+  const hint = el('p', { class: 'boxhint', text: 'לחץ על התיבה כדי לפתוח' });
+  const rewards = el('div', { class: 'rewards' });
+  const left = W$.data.boxes.length - 1;
+  const next = btn(left > 0 ? `לתיבה הבאה (${left})` : 'ללובי', '', () => showBoxOpen(), 'primary');
+  next.hidden = true;
+  const sparks = [];
   let opened = false;
-  chest.addEventListener('click', () => {
+  const open = () => {
     if (opened) return; opened = true; ensureAudio();
-    chest.classList.add('shake'); clack(2500);
-    setTimeout(() => {
-      chest.classList.remove('shake'); chest.classList.add('open'); rewards.classList.add('show'); plop();
-      hint.textContent = r.item ? 'פריט חדש! בוחרים אותו בחנות.' : 'המטבעות נכנסו לארנק.';
-    }, 650);
-  });
-  return el('div', { class: 'chestwrap' }, el('div', { class: 'boxname', text: B.name }), chest, hint, rewards);
+    const r = openNextBox(); if (!r) { showHome(); return; }
+    const t0 = performance.now();
+    const step = now => {
+      if (!cv.isConnected) return;
+      const t = now - t0;
+      const shake = t < 650 ? Math.sin(t / 22) * .07 * (1 - t / 650) : 0;
+      const lid = t < 650 ? 0 : Math.min(1, (t - 650) / 320);
+      const ease = 1 - Math.pow(1 - lid, 3);
+      if (t > 650 && sparks.length < 26 && t < 1100) for (let i = 0; i < 3; i++) sparks.push({ x: 100, y: 92, vx: (Math.random() - .5) * 2.4, vy: -2 - Math.random() * 2.6, life: 1 });
+      drawChest(g, S, tier, { lid: ease, shake, glow: ease, rays: t / 1600 });
+      const k = S / 200;
+      for (const p of sparks) {
+        p.x += p.vx; p.y += p.vy; p.vy += .07; p.life -= .012;
+        if (p.life <= 0) continue;
+        g.setTransform(k, 0, 0, k, 0, 0); g.globalAlpha = Math.max(0, p.life);
+        g.beginPath(); g.arc(p.x, p.y, 4, 0, 2 * Math.PI); g.fillStyle = '#ffd65a'; g.fill(); g.lineWidth = 1; g.strokeStyle = '#a5711a'; g.stroke();
+        g.globalAlpha = 1;
+      }
+      if (t > 1000 && !rewards.classList.contains('show')) {
+        rewards.replaceChildren(el('div', { class: 'reward' }, el('span', { class: 'coin' }), `+${r.coins}`, el('small', { text: 'מטבעות' })));
+        if (r.item) rewards.append(el('div', { class: 'reward rare' }, skinPreview(r.item.cat, r.item.s), r.item.s.name, el('small', { text: CAT_NAME[r.item.cat] + ' חדש!' })));
+        rewards.classList.add('show'); next.hidden = false; plop();
+        hint.textContent = r.item ? 'פריט נדיר! בוחרים אותו בחנות.' : 'המטבעות נכנסו לארנק.';
+      }
+      if (t < 4200) requestAnimationFrame(step);
+    };
+    clack(2600); requestAnimationFrame(step);
+  };
+  cv.addEventListener('click', open);
+  cv.setAttribute('role', 'button'); cv.setAttribute('tabindex', '0'); cv.setAttribute('aria-label', 'לפתוח את ה' + BOXES[tier].name);
+  cv.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  openSheet('box',
+    el('div', { class: 'col center' }, el('div', { class: 'boxtitle', text: BOXES[tier].name }), cv, hint),
+    el('div', { class: 'col center' }, rewards, next));
 }
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const dailyBonusDue = () => !!ACC.name && W$.data.daily !== today();
@@ -1561,22 +1801,31 @@ function showDailyBonus() {
     el('div', { class: 'big', text: 'בונוס יומי!' }),
     el('div', { class: 'rewards show' }, el('div', { class: 'reward' }, el('span', { class: 'coin' }), `+${DAILY_BONUS}`, el('small', { text: 'מטבעות על הכניסה היום' }))),
     el('p', { class: 'note', style: 'text-align:center', text: 'נכנסים כל יום ומקבלים עוד.' }),
-    btn('יאללה, ללובי', '', showHome, 'primary'));
+    btn('המשך', '', showHome, 'primary'));
 }
-// daily mission: a few shots alone on the board; the more coins pocketed, the better the box
-const MISSIONS = [{ shots: 5, target: 3 }, { shots: 6, target: 4 }, { shots: 4, target: 2 }];
-const MISSION_TIERS = { 2: ['blue', 'gold'], 3: ['green', 'blue', 'gold'], 4: ['green', 'blue', 'purple', 'gold'] };
-function todaysMission() { const d = new Date(); return MISSIONS[Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5) % MISSIONS.length]; }
+// daily mission: only three coins on the board, five shots to pocket all three; do it and a gold box waits in the lobby
+const MISSION = { shots: 5, target: 3 };
 const missionDone = () => !!(W$.data.mission && W$.data.mission.day === today());
-const missionTier = (got, target) => got <= 0 ? null : MISSION_TIERS[target][Math.min(got, target) - 1];
+function missionLayout() {
+  const d = new Date(), rnd = rng(d.getFullYear() * 1000 + d.getMonth() * 40 + d.getDate()), pts = [];
+  for (let guard = 0; pts.length < 3 && guard < 800; guard++) {
+    const x = (rnd() * 2 - 1) * 340, y = -360 + rnd() * 600;
+    if (POCKETS.some(([px, py]) => Math.hypot(x - px, y - py) < 200)) continue;
+    if (pts.some(p => Math.hypot(p[0] - x, p[1] - y) < 160)) continue;
+    if (Math.abs(x) < 70 && Math.abs(y) < 70) continue;
+    pts.push([round2(x), round2(y)]);
+  }
+  return pts;
+}
 function startMission() {
   if (missionDone()) { showMission(); return; }
   leaveOnline();
-  const m = todaysMission();
   G.mode = 'mission'; G.level = 'medium'; G.st = newState('1v1'); G.st.seats = [0];
+  G.st.coins = new Array(19).fill(null);
+  missionLayout().forEach((p, n) => { G.st.coins[[1, 10, 2][n]] = p; });
   G.ctrl = ['human', 'ai', 'ai', 'ai']; G.names = ['אתה', '', '', ''];
   G.myTeam = 0; G.viewSeat = 0; G.viewAngle = 0; G.rot = null; G.fx = []; G.bet = null;
-  G.mission = { shots: m.shots, target: m.target, used: 0, got: 0 };
+  G.mission = { shots: MISSION.shots, target: MISSION.target, used: 0, got: 0 };
   W$.data.mission = { day: today(), got: 0, done: false }; saveWallet(); // the day's try starts now
   G.settings = { mode: 'mission' };
   setTeamNames(); closeSheet(); beginTurn();
@@ -1584,21 +1833,25 @@ function startMission() {
 function missionSettle() {
   const M = G.mission, st = JSON.parse(JSON.stringify(G.st));
   let got = 0, foul = false;
-  for (const p of G.simEv.pocketed) { if (p.i === 19) foul = true; else got++; }
+  const inThisShot = [];
+  for (const p of G.simEv.pocketed) { if (p.i === 19) foul = true; else inThisShot.push(p.i); }
   st.coins = new Array(19).fill(null);
   for (const b of G.simB) if (b.i < 19 && !b.out) st.coins[b.i] = [round2(b.x), round2(b.y)];
+  if (foul) inThisShot.forEach(i => { st.coins[i] = freeSpot(st.coins); }); // striker in the pocket: what went in comes back
+  else got = inThisShot.length;
   st.shotNo++;
   M.used++; M.got += got;
   G.st = st; G.simB = null; G.phase = 'pause';
-  toast(got ? (got > 1 ? `נכנסו ${got}!` : 'נכנס!') : foul ? 'הסטרייקר נפל לכיס' : 'לא נכנס');
+  toast(foul ? (inThisShot.length ? 'פאול! הדיסקית חוזרת למרכז' : 'הסטרייקר נפל לכיס') : got ? (got > 1 ? `נכנסו ${got}!` : 'נכנס!') : 'לא נכנס');
   updateHud();
   const tok = ++G.token;
   if (M.used >= M.shots || M.got >= M.target) {
     G.phase = 'over'; G.showStriker = false; setCoach('המשימה הסתיימה', '');
+    const win = M.got >= M.target;
     W$.data.mission = { day: today(), got: M.got, done: true };
-    const tier = missionTier(M.got, M.target), reward = tier ? grantBox(tier) : null;
-    if (!tier) saveWallet();
-    setTimeout(() => { if (tok === G.token) showMissionResult(M, reward); }, 700);
+    if (win) W$.data.boxes.push('gold');
+    saveWallet();
+    setTimeout(() => { if (tok === G.token) showMissionResult(M, win); }, 700);
   } else setTimeout(() => { if (tok === G.token) beginTurn(); }, 450);
 }
 function backToLobby() {
@@ -1790,18 +2043,31 @@ function seg(id, opts, value, onChange) {
   }
   return box;
 }
+const NO_CLOSE = ['home', 'welcome', 'boot', 'bonus', 'box'];
 function openSheet(view, ...kids) {
   sheetView = view;
-  const p = $('panel');
-  p.className = 'panel' + (view === 'home' ? ' lobby' : '');
-  $('sheet').classList.toggle('full', view === 'home');
-  p.replaceChildren(...kids.filter(Boolean)); $('sheet').hidden = false; sheetOpen = true; p.scrollTop = 0;
+  const p = $('panel'), full = view === 'home' || view === 'box';
+  p.className = 'panel' + (view === 'home' ? ' lobby' : view === 'box' ? ' boxview' : '');
+  $('sheet').classList.toggle('full', full);
+  // every other screen gets an X in the corner, so you never have to scroll down to leave
+  const x = NO_CLOSE.includes(view) ? null : el('button', { class: 'xbtn', type: 'button', 'aria-label': 'סגור', onclick: () => {
+    if (view === 'over' || view === 'mission') backToLobby(); else showHome();
+  } }, svgX());
+  p.replaceChildren(...[x].concat(kids).filter(Boolean)); $('sheet').hidden = false; sheetOpen = true; p.scrollTop = 0;
+}
+function svgX() {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('width', '20'); s.setAttribute('height', '20'); s.setAttribute('aria-hidden', 'true');
+  const pth = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pth.setAttribute('d', 'M6 6l12 12M18 6L6 18'); pth.setAttribute('stroke', 'currentColor'); pth.setAttribute('stroke-width', '2.6'); pth.setAttribute('stroke-linecap', 'round'); pth.setAttribute('fill', 'none');
+  s.append(pth); return s;
 }
 function closeSheet() { $('sheet').hidden = true; sheetOpen = false; sheetView = ''; }
 const fmtN = n => n.toLocaleString('he-IL');
 // the lobby: stake tables in the middle, game modes along the bottom (like 8 Ball Pool)
 function showHome() {
   if (dailyBonusDue()) { showDailyBonus(); return; }
+  if (W$.data.boxes.length && !(G.mode && G.st.winner === null && G.phase !== 'over')) { showBoxOpen(); return; }
   const inGame = G.mode && G.st.winner === null && G.phase !== 'over';
   const coins = W$.data.coins;
   const arenas = el('div', { class: 'arenas' });
@@ -1815,11 +2081,11 @@ function showHome() {
       el('span', { class: 'asub', text: a.sub }),
       el('span', { class: 'aprize' }, el('span', { class: 'coin' }), `פרס: ${fmtN(a.prize)}`),
       el('span', { class: 'ameta' }, el('span', { text: `כניסה: ${fmtN(a.fee)}` }), el('span', null, 'מחשב ', lv)),
-      el('span', { class: 'abox' }, miniBox(a.box), can ? `ניצחון = ${BOXES[a.box].name}` : `חסרים ${fmtN(a.fee - coins)} מטבעות`));
+      el('span', { class: 'abox' }, chestCanvas(a.box, 30), can ? `ניצחון = ${BOXES[a.box].name}` : `חסרים ${fmtN(a.fee - coins)} מטבעות`));
     if (can) first = card;
     arenas.append(card);
   }
-  const m = todaysMission(), md = missionDone();
+  const m = MISSION, md = missionDone();
   const tb = (text, on, cls) => el('button', { class: 'tb' + (cls ? ' ' + cls : ''), type: 'button', onclick: on }, text);
   const top = el('div', { class: 'topbar' },
     el('button', { class: 'acctbtn', type: 'button', onclick: showAccount, 'aria-label': 'החשבון שלי' },
@@ -1856,24 +2122,25 @@ function showFree() {
     btn('חזרה', '', showHome, 'quiet'));
 }
 function showMission() {
-  const m = todaysMission(), md = missionDone(), tiers = MISSION_TIERS[m.target];
-  const row = el('div', { class: 'missionrow' }, tiers.map((t, i) => el('span', { class: 'mtier' }, miniBox(t), `${i + 1} = ${BOXES[t].name}`)));
+  const md = missionDone();
   openSheet('missionInfo',
-    el('h2', { text: 'משימה יומית' }),
-    el('p', { class: 'lead', text: `יש לך ${m.shots} תורות להכניס ${m.target} דיסקיות. כל דיסקית נחשבת, גם המלכה, ואין יריב.` }),
-    row,
-    el('p', { class: 'note', text: 'הכנסת 0 — אין תיבה. יש ניסיון אחד ביום, ומחר מחכה משימה חדשה.' }),
-    md ? el('p', { class: 'bet win', text: `כבר שיחקת היום והכנסת ${W$.data.mission.got}. חוזרים מחר.` }) : btn('התחל משימה', '', startMission, 'primary'),
-    btn('חזרה', '', showHome, 'quiet'));
+    el('div', { class: 'col' },
+      el('h2', { text: 'משימה יומית' }),
+      el('p', { class: 'lead', text: `על הלוח יש רק ${MISSION.target} דיסקיות, מפוזרות. יש לך ${MISSION.shots} תורות להכניס את כולן. הצלחת — תיבת זהב מחכה לך בלובי.` }),
+      el('p', { class: 'note', text: 'סטרייקר שנופל לכיס מבזבז תור, ומה שנכנס איתו חוזר למרכז. יש ניסיון אחד ביום.' }),
+      md ? el('p', { class: 'bet win', text: W$.data.mission.got >= MISSION.target ? 'כבר הצלחת היום! חוזרים מחר למשימה חדשה.' : `כבר ניסית היום (הכנסת ${W$.data.mission.got}). חוזרים מחר.` })
+        : btn('התחל משימה', '', startMission, 'primary')),
+    el('div', { class: 'col center' }, chestCanvas('gold', 150), el('div', { class: 'boxname', text: 'פרס: תיבת זהב' })));
+  $('panel').classList.add('split');
 }
-function showMissionResult(M, reward) {
+function showMissionResult(M, win) {
   const info = el('div', { class: 'col' },
-    el('div', { class: 'big', text: reward ? (M.got >= M.target ? 'משימה הושלמה!' : 'כל הכבוד!') : 'לא הפעם' }),
-    el('p', { class: 'lead', style: 'text-align:center', text: `הכנסת ${M.got} דיסקיות ב-${M.used} תורות (היעד: ${M.target}).` }),
-    reward ? null : el('p', { class: 'note', style: 'text-align:center', text: 'בלי הכנסה אין תיבה. מחר יש משימה חדשה.' }),
-    btn('ללובי', '', backToLobby, 'primary'));
-  openSheet('mission', info, reward ? el('div', { class: 'col' }, chestView(reward)) : null);
-  if (reward) $('panel').classList.add('split');
+    el('div', { class: 'big', text: win ? 'משימה הושלמה!' : 'לא הפעם' }),
+    el('p', { class: 'lead', style: 'text-align:center', text: win ? `הכנסת את כל ${M.target} הדיסקיות ב-${M.used} תורות.` : `הכנסת ${M.got} מתוך ${M.target}. צריך את כולן כדי לקבל את התיבה.` }),
+    win ? el('p', { class: 'bet win', text: 'תיבת הזהב מחכה לך בלובי' }) : el('p', { class: 'note', style: 'text-align:center', text: 'מחר יש משימה חדשה.' }),
+    btn(win ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'primary'));
+  openSheet('mission', info, win ? el('div', { class: 'col center' }, chestCanvas('gold', 170)) : null);
+  if (win) $('panel').classList.add('split');
 }
 function showLocal() {
   let fmt = store.get('localFmt', '1v1');
@@ -1943,11 +2210,11 @@ function showRules() {
       li(el('b', { text: 'הצבע שלך: ' }), 'לא בוחרים מראש. מי שמכניס ראשון אסימון — הצבע של האסימון הזה הוא הצבע שלו עד סוף המשחק.'),
       li('נכנס אסימון שלך? נקודה ועוד תור. אסימון של היריב נספר ליריב.'),
       li(el('b', { text: 'המלכה האדומה: ' }), 'מותר להכניס אותה בכל רגע. מי שמכניס אותה חייב באותו תור להכניס גם אסימון בצבע שלו (באותה מכה או במכה הבאה). הצליח — +3 נקודות. לא הצליח — המלכה חוזרת למרכז ואין נקודות.'),
-      li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר.'),
+      li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר. אם באותה מכה נכנס גם אסימון שלך, חוזר רק הוא, ואם הוא כיסה את המלכה — 3 הנקודות נשארות.'),
       li(el('b', { text: 'סוף המשחק: ' }), 'כשאחד הצבעים נכנס כולו. מנצח מי שיש לו יותר נקודות (אסימונים + 3 למלכה). בתיקו — מי שסיים את הצבע שלו.'),
       li(el('b', { text: 'שולחנות: ' }), 'בלובי בוחרים שולחן. משלמים כניסה, ומי שמנצח לוקח את הפרס ותיבה. ככל שהשולחן יקר יותר, המחשב חזק יותר.'),
-      li(el('b', { text: 'תיבות: ' }), 'ירוקה, כחולה, סגולה וזהב — מהחלשה לטובה. פותחים מיד ומקבלים מטבעות, ולפעמים לוח, סט דיסקיות או סטרייקר.'),
-      li(el('b', { text: 'כל יום: ' }), '150 מטבעות על הכניסה, ומשימה יומית אחת שנותנת תיבה לפי כמה הכנסת.'),
+      li(el('b', { text: 'תיבות: ' }), 'ירוקה, כחולה, סגולה וזהב — מהחלשה לטובה. תיבה שזכית בה מחכה לך בלובי, ושם פותחים אותה. בפנים יש מטבעות, ולפעמים — נדיר — לוח, סט דיסקיות או סטרייקר.'),
+      li(el('b', { text: 'כל יום: ' }), '150 מטבעות על הכניסה, ומשימה יומית: 3 דיסקיות על הלוח ו-5 תורות להכניס את כולן. הצלחת — תיבת זהב.'),
       li(el('b', { text: 'נגמר הכסף? ' }), 'משחק חופשי נגד המחשב לא עולה כלום.'),
       li('ב-2 על 2 השותף יושב מולך, והתור עובר נגד כיוון השעון.')
     ),
@@ -2101,10 +2368,11 @@ function showGameOver() {
     againBtn = btn(arena ? `שוב ב${arena.name} · ${fmtN(arena.fee)}` : 'משחק חוזר', '', again, 'primary');
     if (arena && W$.data.coins < arena.fee) againBtn.disabled = true;
   }
-  const info = [el('div', { class: 'big', text: title }), scoreRow, betLine, b ? walletPill() : null, againBtn, btn('ללובי', '', backToLobby, 'quiet')];
-  if (b && b.reward) {
+  const info = [el('div', { class: 'big', text: title }), scoreRow, betLine, b ? walletPill() : null, againBtn, btn(b && b.won && b.box ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'quiet')];
+  if (b && b.won && b.box) {
     // won a box: result on one side, the box to open on the other
-    openSheet('over', el('div', { class: 'col' }, info.filter(Boolean)), el('div', { class: 'col' }, chestView(b.reward)));
+    openSheet('over', el('div', { class: 'col' }, info.filter(Boolean)),
+      el('div', { class: 'col center' }, chestCanvas(b.box, 170), el('div', { class: 'boxname', text: `זכית ב${BOXES[b.box].name}!` }), el('p', { class: 'note', text: 'פותחים אותה בלובי' })));
     $('panel').classList.add('split');
   } else openSheet('over', ...info);
 }
