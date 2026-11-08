@@ -342,7 +342,7 @@ const $ = id => document.getElementById(id);
 
 /* ---------------- board geometry (1 unit ≈ 0.74 mm of a real 74 cm board) ---------------- */
 // pieces are drawn a little bigger than a real board, and the frame thinner, so they read well on a phone
-const HALF = 500, FRAME = 40;
+const HALF = 500, FRAME = 100;
 const R_C = 26, R_S = 33, M_C = 1, M_S = 2.8;
 const POCKET = 470, POCKET_R = 36, POCKET_DRAW = 38;
 const BASE_Y = 341.5, BASE_X = 296;
@@ -359,7 +359,7 @@ const colorOf = i => i === 0 ? 'q' : i <= 9 ? 'w' : i <= 18 ? 'b' : 's';
 const colorOfTeam = T => T === 0 ? 'w' : 'b';
 const round2 = v => Math.round(v * 100) / 100;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const HOWTO = 'מקם במסילה שמימין · על הלוח: החלק את הסטרייקר בתנופה';
+const HOWTO = 'מקם במסילה שמימין · על הלוח: גרור את הסטרייקר אחורה וכוון לפי החץ';
 
 // seat-local -> world: seat 0 bottom, 1 right, 2 top, 3 left (turns go counter-clockwise)
 function rotW(x, y, s) { s = ((s % 4) + 4) % 4; for (let i = 0; i < s; i++) { const t = x; x = y; y = -t; } return [x, y]; }
@@ -712,6 +712,7 @@ let toastT = 0;
 function toast(m) { if (!m) return; const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
 
 function beginTurn() {
+  useBoard();
   const st = G.st, tok = ++G.token;
   G.aiAnim = null; G.strikerTarget = null; G.simB = null;
   updateHud();
@@ -928,7 +929,7 @@ function startBlitz(level) {
   G.simB = B; G.simEv = { pocketed: [], hits: [], track: true }; G.evP = 0; G.evH = 0; G.simAcc = 0;
   G.blitz = { ready: [true, true], back: [0, 0], aiAt: performance.now() + 1800, aiX: 0, done: [false, false], over: false, last: 0, reason: '' };
   G.strikerX = 0; G.placeValid = true; G.phase = 'blitz'; G.showStriker = false; G.token++;
-  setTeamNames(); closeSheet(); updateHud();
+  setTeamNames(); closeSheet(); updateHud(); useBoard();
   setCoach('בלי תורות — יורים מתי שרוצים', 'קודם את 3 שלך, ורק אז את המלכה');
 }
 function blitzShoot(T, vx, vy) {
@@ -1039,50 +1040,32 @@ cv.addEventListener('pointerdown', e => {
   const l = toLocal(e), dx = l.x - G.strikerX, dy = l.y - BASE_Y;
   const grabR = Math.max(R_S * 1.8, 30 / scale);
   if (dx * dx + dy * dy >= grabR * grabR) return;
-  P = { id: e.pointerId, mode: 'flick', sx: e.clientX, sy: e.clientY, samples: [{ t: e.timeStamp, x: e.clientX, y: e.clientY }] };
-  G.grabbing = true;
+  P = { id: e.pointerId, mode: 'aim' };
+  G.grabbing = true; G.aim = null;
   try { cv.setPointerCapture(e.pointerId); } catch (err) {}
   e.preventDefault();
 });
+const MAX_PULL = 300; // board units of pull for a full-power shot
+function aimFrom(e) {
+  const l = toLocal(e), dx = G.strikerX - l.x, dy = BASE_Y - l.y, len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 26) return null; // barely pulled: no shot
+  const seat = G.mode === 'blitz' ? 0 : curSeat(G.st), [ux, uy] = rotW(dx / len, dy / len, seat);
+  return { ux, uy, power: Math.min(1, (len - 26) / MAX_PULL), pull: Math.min(len, MAX_PULL + 26) };
+}
 cv.addEventListener('pointermove', e => {
   if (!P || e.pointerId !== P.id) return;
-  const list = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-  if (list.length) for (const c of list) P.samples.push({ t: c.timeStamp, x: c.clientX, y: c.clientY });
-  else P.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
-  const cut = e.timeStamp - 400; while (P.samples.length > 2 && P.samples[0].t < cut) P.samples.shift();
-  {
-    const r = cv.getBoundingClientRect();
-    G.trail.push({ x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() });
-    if (G.trail.length > 40) G.trail.shift();
-  }
+  G.aim = canInput() ? aimFrom(e) : null;
 });
-function flickVelocity(S) {
-  const n = S.length; if (n < 2) return null;
-  const tEnd = S[n - 1].t; let best = null, bs = 0;
-  for (let i = n - 1; i > 0; i--) {
-    const a = S[i]; if (tEnd - a.t > 140) break;
-    let j = i - 1; while (j > 0 && a.t - S[j].t < 35) j--;
-    const dt = a.t - S[j].t; if (dt <= 0) continue;
-    const vx = (a.x - S[j].x) / dt, vy = (a.y - S[j].y) / dt, sp = Math.sqrt(vx * vx + vy * vy);
-    if (sp > bs) { bs = sp; best = { vx, vy }; }
-  }
-  return best;
-}
 function endPointer(e, cancelled) {
   if (!P || e.pointerId !== P.id) return;
-  const p = P; P = null; G.grabbing = false;
-  if (cancelled || p.mode !== 'flick' || !canInput()) { G.trail = []; return; }
-  const mdx = e.clientX - p.sx, mdy = e.clientY - p.sy;
-  if (mdx * mdx + mdy * mdy < 144) { G.trail = []; return; } // just a tap: no shot
-  p.samples.push({ t: e.timeStamp, x: e.clientX, y: e.clientY });
-  const v = flickVelocity(p.samples);
-  let vx = v ? v.vx * 1000 / scale * POWER : 0, vy = v ? v.vy * 1000 / scale * POWER : 0;
-  const sp = Math.sqrt(vx * vx + vy * vy);
-  if (sp < 120) { G.trail = []; toast('התנופה הייתה חלשה מדי — החלק מהר יותר'); return; }
-  if (!G.placeValid) { G.trail = []; toast('הסטרייקר נוגע באסימון — הזז אותו קודם'); return; }
-  if (sp > VMAX) { vx *= VMAX / sp; vy *= VMAX / sp; }
-  const seat = curSeat(G.st), [x, y] = rotW(G.strikerX, BASE_Y, seat), [wvx, wvy] = rotW(vx, vy, seat);
-  fire({ x, y, vx: wvx, vy: wvy }, true);
+  P = null; G.grabbing = false;
+  const A = cancelled ? null : aimFrom(e); G.aim = null;
+  if (!A || !canInput()) return;
+  if (A.power < .03) { toast('משוך את הסטרייקר אחורה כדי לירות'); return; }
+  if (!G.placeValid) { toast('הסטרייקר נוגע באסימון — הזז אותו קודם'); return; }
+  const sp = 200 + A.power * (VMAX - 200);
+  const seat = G.mode === 'blitz' ? 0 : curSeat(G.st), [x, y] = rotW(G.strikerX, BASE_Y, seat);
+  fire({ x, y, vx: A.ux * sp, vy: A.uy * sp }, true);
 }
 cv.addEventListener('pointerup', e => endPointer(e, false));
 cv.addEventListener('pointercancel', e => endPointer(e, true));
@@ -1227,10 +1210,37 @@ const SKINS = [
     vignette: 'rgba(80,90,110,.18)', ink: '#5b6b85', red: '#4f9df5', petal: 'rgba(79,157,245,.55)', rim: 'rgba(255,255,255,.85)', inlay: '#4f9df5', tiles: true, frameVeins: true }
 ];
 const skinById = id => SKINS.find(s => s.id === id) || SKINS[0];
+// the three real boards (photos of the actual boards), one per level
+const BOARDS = {
+  classic: { name: 'קלאסיק', src: 'boards/classic.webp' },
+  pro: { name: 'פרו', src: 'boards/pro.webp' },
+  champion: { name: 'צ׳מפיון', src: 'boards/champion.webp' }
+};
+const BOARD_BY_LEVEL = { novice: 'classic', easy: 'classic', medium: 'pro', skilled: 'pro', hard: 'champion', master: 'champion' };
+const boardPics = {};
+function boardPic(id) {
+  let im = boardPics[id];
+  if (!im) {
+    im = boardPics[id] = new Image();
+    im.onload = () => { if (G.boardId === id && cv.width) drawBoardImage(); };
+    im.src = BOARDS[id].src;
+  }
+  return im.complete && im.naturalWidth ? im : null;
+}
+function currentBoard() {
+  if (G.mode === 'ai' || G.mode === 'blitz') return BOARD_BY_LEVEL[G.level] || 'pro';
+  if (G.mode === 'online') return 'pro';
+  return 'classic';
+}
 function drawBoardImage() {
   boardImg.width = boardImg.height = cv.width;
-  drawBoard(boardImg, skinById(W$.data.equip.board));
+  G.boardId = currentBoard();
+  const pic = boardPic(G.boardId), g = boardImg.getContext('2d');
+  if (pic) { g.setTransform(1, 0, 0, 1, 0, 0); g.imageSmoothingQuality = 'high'; g.drawImage(pic, 0, 0, boardImg.width, boardImg.height); }
+  else drawBoard(boardImg, SKINS[0]); // until the photo has loaded
 }
+function useBoard() { if (cv.width && G.boardId !== currentBoard()) drawBoardImage(); }
+for (const id in BOARDS) boardPic(id);
 function applySkin() { if (cv.width) { drawBoardImage(); makeSprites(); updateHud(); } }
 function drawBoard(canvas, skin) {
   const W = canvas.width;
@@ -1545,17 +1555,64 @@ function draw(now) {
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(242,165,49,.9)'; ctx.beginPath(); ctx.arc(x, y, R_S + 4, 0, 2 * Math.PI); ctx.stroke();
     }
   }
-  if (G.trail.length) {
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const t0 = performance.now();
-    G.trail = G.trail.filter(p => t0 - p.t < 260);
-    for (const p of G.trail) {
-      const age = (t0 - p.t) / 260;
-      ctx.globalAlpha = .55 * (1 - age); ctx.fillStyle = '#fff6e0';
-      ctx.beginPath(); ctx.arc(p.x, p.y, 7 * (1 - age) + 2, 0, 2 * Math.PI); ctx.fill();
+  if (G.aim && G.grabbing) drawAim(seat);
+}
+function arrowHead(x, y, ux, uy, size, fill) {
+  ctx.beginPath(); ctx.moveTo(x + ux * size, y + uy * size);
+  ctx.lineTo(x - uy * size * .6, y + ux * size * .6); ctx.lineTo(x + uy * size * .6, y - ux * size * .6); ctx.closePath();
+  ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke();
+}
+function drawAim(seat) {
+  const A = G.aim;
+  let sx, sy;
+  if (G.mode === 'blitz') { const s = G.simB.find(b => b.i === 19); sx = s.x; sy = s.y; } else [sx, sy] = rotW(G.strikerX, BASE_Y, seat);
+  const coins = [];
+  if (G.simB) { for (const b of G.simB) if (!b.out && b.i < 19) coins.push([b.x, b.y]); }
+  else for (const c of G.st.coins) if (c) coins.push(c);
+  // follow the line: first coin it would hit, or bounce once off the wall
+  let x = sx, y = sy, ux = A.ux, uy = A.uy, left = 450 + A.power * 1300, hit = null;
+  const path = [[x, y]], lim = HALF - R_S, rr = R_S + R_C;
+  for (let bounce = 0; bounce < 3 && left > 0 && !hit; bounce++) {
+    let best = Infinity, C = null;
+    for (const c of coins) {
+      const cx = c[0] - x, cy = c[1] - y, proj = cx * ux + cy * uy; if (proj <= 0) continue;
+      const d2 = cx * cx + cy * cy - proj * proj; if (d2 > rr * rr) continue;
+      const tt = proj - Math.sqrt(rr * rr - d2); if (tt > .5 && tt < best) { best = tt; C = c; }
     }
-    ctx.globalAlpha = 1;
+    const tx = ux > 0 ? (lim - x) / ux : ux < 0 ? (-lim - x) / ux : Infinity, ty = uy > 0 ? (lim - y) / uy : uy < 0 ? (-lim - y) / uy : Infinity, tw = Math.min(tx, ty);
+    if (best <= tw && best <= left) { x += ux * best; y += uy * best; path.push([x, y]); hit = C; break; }
+    const step = Math.min(tw, left); x += ux * step; y += uy * step; path.push([x, y]); left -= step;
+    if (step === tw) { if (tx <= ty) ux = -ux; else uy = -uy; } else break;
   }
+  // dotted path
+  ctx.save();
+  for (let k = 1; k < path.length; k++) {
+    const [ax, ay] = path[k - 1], [bx, by] = path[k], L = Math.hypot(bx - ax, by - ay);
+    for (let d = (k === 1 ? R_S + 16 : 0); d < L; d += 36) {
+      const px = ax + (bx - ax) * d / L, py = ay + (by - ay) * d / L;
+      ctx.beginPath(); ctx.arc(px, py, 8.5, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.stroke();
+    }
+  }
+  if (hit) {
+    // where the striker meets the coin, and where that coin will roll
+    ctx.beginPath(); ctx.arc(x, y, R_S, 0, 2 * Math.PI); ctx.lineWidth = 5; ctx.setLineDash([12, 9]); ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.stroke(); ctx.setLineDash([]);
+    let dx = hit[0] - x, dy = hit[1] - y; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+    const len = 90 + A.power * 160, ex = hit[0] + dx * (R_C + len), ey = hit[1] + dy * (R_C + len);
+    ctx.beginPath(); ctx.moveTo(hit[0] + dx * R_C, hit[1] + dy * R_C); ctx.lineTo(ex, ey);
+    ctx.lineWidth = 12; ctx.strokeStyle = 'rgba(0,0,0,.35)'; ctx.stroke(); ctx.lineWidth = 7; ctx.strokeStyle = '#ffd65a'; ctx.stroke();
+    arrowHead(ex, ey, dx, dy, 34, '#ffd65a');
+  } else {
+    const [lx, ly] = path[path.length - 1];
+    arrowHead(lx, ly, ux, uy, 36, '#ffffff');
+  }
+  // power ring around the striker: green -> yellow -> red
+  ctx.beginPath(); ctx.arc(sx, sy, R_S + 13, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * A.power);
+  ctx.lineWidth = 12; ctx.lineCap = 'round'; ctx.strokeStyle = `hsl(${120 - 120 * A.power},85%,52%)`; ctx.stroke(); ctx.lineCap = 'butt';
+  // the pulled-back "band" toward your finger
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - A.ux * A.pull, sy - A.uy * A.pull);
+  ctx.lineWidth = 9; ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.stroke();
+  ctx.restore();
 }
 function processEvents(now) {
   const ev = G.simEv;
@@ -2031,7 +2088,7 @@ function chestCanvas(tier, css, st) {
   return c;
 }
 const CAT_NAME = { board: 'לוח', coins: 'סט דיסקיות', striker: 'סטרייקר' };
-const allItems = () => [...SKINS.map(s => ({ s, cat: 'board' })), ...COIN_SETS.map(s => ({ s, cat: 'coins' })), ...STRIKERS.map(s => ({ s, cat: 'striker' }))];
+const allItems = () => [...COIN_SETS.map(s => ({ s, cat: 'coins' })), ...STRIKERS.map(s => ({ s, cat: 'striker' }))];
 function rollBox(tier) {
   const B = BOXES[tier];
   let coins = B.coins[0] + Math.floor(Math.random() * (B.coins[1] - B.coins[0] + 1)), item = null;
@@ -2700,7 +2757,7 @@ function showHome() {
     for (let i = 1; i <= 6; i++) lv.append(el('i', { class: i <= a.stars ? 'on' : '' }));
     const card = el('button', { class: 'arena', type: 'button', style: `--a1:${a.a[0]};--a2:${a.a[1]}`, disabled: !can, onclick: () => startLocalGame('ai', '1v1', a.level, a) },
       el('span', { class: 'aname', text: a.name }),
-      el('span', { class: 'asub', text: a.sub }),
+      el('span', { class: 'asub', text: `${a.sub} · לוח ${BOARDS[BOARD_BY_LEVEL[a.level]].name}` }),
       el('span', { class: 'aprize' }, el('span', { class: 'coin' }), `פרס: ${fmtN(a.prize)}`),
       el('span', { class: 'ameta' }, el('span', { text: `כניסה: ${fmtN(a.fee)}` }), el('span', null, 'מחשב ', lv)),
       el('span', { class: 'abox' }, chestCanvas(a.box, 30), can ? `ניצחון = ${BOXES[a.box].name}` : `חסרים ${fmtN(a.fee - coins)} מטבעות`));
@@ -2742,7 +2799,7 @@ function showFree() {
     seg('lvl', [['easy', 'קל'], ['medium', 'בינוני'], ['hard', 'קשה']], level, v => { level = v; store.set('level', v); }),
     el('p', { class: 'label', text: 'מצב' }),
     seg('fmt', [['1v1', '1 על 1'], ['2v2', '2 על 2']], fmt, v => { fmt = v; store.set('aiFmt', v); }),
-    el('p', { class: 'note', text: 'ב-2 על 2 השותף שלך (מחשב) יושב מולך.' }),
+    el('p', { class: 'note', text: 'קל = לוח קלאסיק · בינוני = פרו · קשה = צ׳מפיון. ב-2 על 2 השותף שלך (מחשב) יושב מולך.' }),
     btn('התחל', '', () => startLocalGame('ai', fmt, level), 'primary'),
     btn('חזרה', '', showHome, 'quiet'));
 }
@@ -2851,7 +2908,8 @@ function showRules() {
     el('h2', { text: 'איך משחקים' }),
     el('ul', { class: 'rules' },
       li(el('b', { text: 'מיקום: ' }), 'בתחילת התור מזיזים את הסטרייקר במסילה שבצד הלוח. ימינה ושמאלה במסילה = ימינה ושמאלה על הקו שלך. הסטרייקר יכול לשבת על העיגול האדום כולו, או על הקו בלי לגעת בעיגול — אף פעם לא חצי-חצי, אז הוא קופץ למקום החוקי הקרוב.'),
-      li(el('b', { text: 'מכה: ' }), 'על הלוח עצמו שמים אצבע על הסטרייקר ומחליקים בתנופה לכיוון שרוצים. מהירות האצבע = עוצמת המכה. אין חץ — מכוונים לבד. נגיעה על הלוח לא מזיזה את הסטרייקר.'),
+      li(el('b', { text: 'מכה: ' }), 'שמים אצבע על הסטרייקר ומושכים אחורה, כמו גומייה. נקודות וחץ מראים לאן הוא ייסע, ואם הוא יפגע בדיסקית — חץ צהוב מראה לאן היא תתגלגל. ככל שמושכים יותר — המכה חזקה יותר (הטבעת סביב הסטרייקר). עוזבים — והוא יוצא.'),
+      li(el('b', { text: 'הלוחות: ' }), 'שלושה לוחות אמיתיים לפי הרמה: קל — קלאסיק, בינוני — פרו, קשה — צ׳מפיון.'),
       li(el('b', { text: 'הצבע שלך: ' }), 'לא בוחרים מראש. מי שמכניס ראשון אסימון — הצבע של האסימון הזה הוא הצבע שלו עד סוף המשחק.'),
       li('נכנס אסימון שלך? נקודה ועוד תור. אסימון של היריב נספר ליריב.'),
       li(el('b', { text: 'המלכה האדומה: ' }), 'מותר להכניס אותה בכל רגע. מי שמכניס אותה חייב באותו תור להכניס גם אסימון בצבע שלו (באותה מכה או במכה הבאה). הצליח — +3 נקודות. לא הצליח — המלכה חוזרת למרכז ואין נקודות.'),
@@ -2870,7 +2928,7 @@ function showRules() {
     btn('חזרה', '', showHome, 'quiet')
   );
 }
-let confirmBuy = null, shopTab = 'board', confirmLogout = false;
+let confirmBuy = null, shopTab = 'coins', confirmLogout = false;
 const SHOP = { board: SKINS, coins: COIN_SETS, striker: STRIKERS };
 function skinPreview(tab, item) {
   const c = document.createElement('canvas'), px = Math.round(170 * Math.min(2, window.devicePixelRatio || 1));
@@ -2921,7 +2979,7 @@ function showShop() {
   openSheet('shop',
     el('h2', { text: 'חנות סקינים' }),
     walletPill(),
-    seg('shoptab', [['board', 'לוחות'], ['coins', 'דיסקיות'], ['striker', 'סטרייקרים']], tab, v => { shopTab = v; confirmBuy = null; showShop(); }),
+    seg('shoptab', [['coins', 'דיסקיות'], ['striker', 'סטרייקרים']], tab, v => { shopTab = v; confirmBuy = null; showShop(); }),
     grid,
     btn('חזרה', '', () => { confirmBuy = null; showHome(); }, 'quiet')
   );

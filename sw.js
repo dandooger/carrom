@@ -1,7 +1,7 @@
 // Offline cache for the Carrom app. The page itself comes fresh from the internet when
 // possible (so updates arrive right away) and from the cache when offline.
-const CACHE = "carrom-1794171496501";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/logo.webp", "icons/logo-mark.webp"];
+const CACHE = "carrom-1794172759061";
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/logo.webp", "icons/logo-mark.webp", "boards/classic.webp", "boards/pro.webp", "boards/champion.webp"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
