@@ -66,6 +66,21 @@ body{margin:0;background-color:var(--night);color:var(--ivory);font-family:var(-
 #coach{flex:none;display:flex;flex-direction:column;justify-content:center;text-align:center;line-height:1.3;gap:4px;
   background:var(--indigo);border-radius:14px;padding:10px 12px;min-height:3.2em}
 #coachMain{font-weight:800;font-size:16px;color:var(--saffron)}
+#clock{display:flex;align-items:center;gap:12px;background:var(--indigo);border-radius:14px;padding:8px 14px}
+#clock svg{width:46px;height:50px;flex:none;overflow:visible}
+#clock .face{fill:var(--night);stroke:var(--ivory);stroke-width:2.5}
+#clock .crown{fill:var(--ivory)}
+#clock .track{fill:none;stroke:rgba(245,236,217,.12);stroke-width:4.5}
+#clock .arc{fill:none;stroke:var(--saffron);stroke-width:4.5;stroke-linecap:round;stroke-dasharray:100.53;transform:rotate(-90deg);transform-origin:24px 29px}
+#clock .hand{stroke:var(--ivory);stroke-width:2.2;stroke-linecap:round;transform-origin:24px 29px}
+#clock .pin{fill:var(--ivory)}
+#clock .clk{display:flex;flex-direction:column;line-height:1.1;min-width:0}
+#clock b{font-family:var(--font-display);font-size:28px;font-weight:400;font-variant-numeric:tabular-nums;direction:ltr;text-align:right}
+#clock small{font-size:12px;color:var(--ivory-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clock.low .arc{stroke:var(--vermilion)}
+#clock.low b{color:#ff9b87}
+#clock.low svg{animation:tick 1s ease-in-out infinite}
+@keyframes tick{50%{transform:scale(1.07)}}
 #coachSub{font-size:14px;color:var(--ivory-dim)}
 #coachMain:empty+#coachSub:empty{display:none}
 /* sheets */
@@ -261,6 +276,15 @@ input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 1
   </main>
   <aside class="side side-b">
     <footer id="coach"><span id="coachMain"></span><span id="coachSub"></span></footer>
+    <div id="clock" hidden>
+      <svg viewBox="0 0 48 52" aria-hidden="true">
+        <rect class="crown" x="20" y="0" width="8" height="5" rx="1.5"/><rect class="crown" x="35" y="6" width="6" height="4" rx="1.5" transform="rotate(40 38 8)"/>
+        <circle class="face" cx="24" cy="29" r="20"/><circle class="track" cx="24" cy="29" r="16"/>
+        <circle class="arc" id="clockArc" cx="24" cy="29" r="16"/>
+        <line class="hand" id="clockHand" x1="24" y1="29" x2="24" y2="15"/><circle class="pin" cx="24" cy="29" r="2.4"/>
+      </svg>
+      <div class="clk"><b id="clockNum">30.0</b><small id="clockWho"></small></div>
+    </div>
     <div id="placer" class="off" role="slider" tabindex="0" aria-label="מיקום הסטרייקר על הקו" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0">
       <div class="rail"></div><span class="end" style="left:19px"></span><span class="end" style="right:19px"></span><div class="thumb"></div>
     </div>
@@ -316,7 +340,7 @@ function initialCoins() {
 }
 function newState(fmt) {
   return { fmt, seats: fmt === '2v2' ? [0, 1, 2, 3] : [0, 2], coins: initialCoins(), queen: null,
-    colors: null, turn: 0, shotNo: 0, winner: null, final: null, msg: '', gid: Math.floor(Math.random() * 1e9) };
+    colors: null, debt: [0, 0], turn: 0, shotNo: 0, winner: null, final: null, msg: '', gid: Math.floor(Math.random() * 1e9) };
 }
 // house rules: a team's colour is whatever it pockets first; queen = +3 once covered
 const otherColor = c => c === 'w' ? 'b' : 'w';
@@ -324,7 +348,7 @@ const colorName = c => coinSetById(W$.data.equip.coins).labels[c === 'w' ? 0 : 1
 const teamColor = (st, T) => st.colors ? st.colors[T] : null;
 function teamPoints(st, T) {
   const c = teamColor(st, T);
-  return (c ? pocketedOf(st.coins, c).length : 0) + (st.queen && st.queen.covered && st.queen.by === T ? 3 : 0);
+  return (c ? pocketedOf(st.coins, c).length : 0) + (st.queen && st.queen.covered && st.queen.by === T ? 3 : 0) - ((st.debt && st.debt[T]) || 0);
 }
 const teamOf = (st, s) => st.fmt === '2v2' ? s % 2 : (s === 0 ? 0 : 1);
 const curSeat = st => st.seats[st.turn];
@@ -387,6 +411,10 @@ function step(B, ev) {
       A.x += nx * ov * fa; A.y += ny * ov * fa; C.x -= nx * ov * fc; C.y -= ny * ov * fc;
       const rel = (A.vx - C.vx) * nx + (A.vy - C.vy) * ny;
       if (rel < 0) {
+        if (ev.track) {
+          if (A.own !== undefined) C.lt = A.own; else if (C.own !== undefined) A.lt = C.own;
+          else if (A.vx * A.vx + A.vy * A.vy > C.vx * C.vx + C.vy * C.vy) { if (A.lt !== undefined) C.lt = A.lt; } else if (C.lt !== undefined) A.lt = C.lt;
+        }
         const j = -(1 + E_BALL) * rel / im;
         A.vx += j * nx / A.m; A.vy += j * ny / A.m; C.vx -= j * nx / C.m; C.vy -= j * ny / C.m;
         if (ev.hits) ev.hits.push(-rel);
@@ -422,6 +450,7 @@ function simulate(coins, shot, maxT) {
 /* ---------------- rules ---------------- */
 function applyRules(st0, B, ev) {
   const st = JSON.parse(JSON.stringify(st0));
+  st.debt = Array.isArray(st.debt) ? st.debt : [0, 0];
   const seat = curSeat(st), T = teamOf(st, seat);
   const coins = new Array(19).fill(null);
   for (const b of B) if (b.i < 19 && !b.out) coins[b.i] = [round2(b.x), round2(b.y)];
@@ -433,6 +462,15 @@ function applyRules(st0, B, ev) {
   }
   const msgs = []; let cont = false;
   const toCenter = i => { if (!st.coins[i]) st.coins[i] = freeSpot(st.coins); };
+  // the queen is worth more: she always gets the exact center, and a coin sitting there moves beside her
+  const queenHome = () => {
+    if (st.coins[0]) return;
+    st.coins[0] = [0, 0];
+    for (let i = 1; i < 19; i++) {
+      const c = st.coins[i];
+      if (c && c[0] * c[0] + c[1] * c[1] < (2 * R_C + .3) * (2 * R_C + .3)) { st.coins[i] = null; st.coins[i] = freeSpot(st.coins); }
+    }
+  };
   // first clean pocket of the game decides the colours, by the first coin that dropped
   if (!st.colors && !foul && potCoins.length) {
     const c = colorOf(potCoins[0]);
@@ -451,13 +489,16 @@ function applyRules(st0, B, ev) {
       else if (st.queen && !st.queen.covered && st.queen.by === T) { st.queen.covered = true; msgs.push('כיסית את המלכה! +3 נקודות'); }
       msgs.push(potOwn.length > 1 ? 'מה שהכנסת חוזר למרכז' : 'האסימון שהכנסת חוזר למרכז');
     } else {
-      if (!own) potCoins.forEach(toCenter);
+      // nothing of yours to give back yet: you owe one, paid with the next coin you pocket
+      const owe = () => { st.debt[T]++; msgs.push('עוד אין לך אסימון להחזיר — מינוס נקודה'); };
+      if (!own) { potCoins.forEach(toCenter); owe(); }
       else {
         const prev = pocketedOf(st.coins, own);
         if (prev.length) { toCenter(prev[prev.length - 1]); msgs.push('אסימון אחד שלך חוזר למרכז'); }
+        else owe();
       }
-      if (potQ) toCenter(0);
-      if (st.queen && !st.queen.covered && st.queen.by === T) { toCenter(0); st.queen = null; }
+      if (potQ) queenHome();
+      if (st.queen && !st.queen.covered && st.queen.by === T) { queenHome(); st.queen = null; }
     }
   } else {
     if (potQ) {
@@ -465,16 +506,22 @@ function applyRules(st0, B, ev) {
       else { st.queen = { by: T, covered: false }; msgs.push('המלכה בכיס! הכנס עכשיו אסימון שלך כדי לקבל 3 נקודות'); cont = true; }
     } else if (st.queen && !st.queen.covered && st.queen.by === T) {
       if (potOwn.length) { st.queen.covered = true; msgs.push('כיסית את המלכה! +3 נקודות'); }
-      else { toCenter(0); st.queen = null; msgs.push('לא כיסית — המלכה חוזרת למרכז'); }
+      else { queenHome(); st.queen = null; msgs.push('לא כיסית — המלכה חוזרת למרכז'); }
     }
     if (potOwn.length) { cont = true; if (msgs.length < 1 || (msgs.length === 1 && msgs[0].startsWith('הצבעים'))) msgs.push(potOwn.length > 1 ? `נכנסו ${potOwn.length} — עוד תור!` : 'נכנס! עוד תור'); }
     else if (potCoins.length && !potQ) msgs.push('הכנסת אסימון של היריב');
+    if (potOwn.length && st.debt[T] > 0) {
+      const pay = Math.min(st.debt[T], potOwn.length);
+      for (let k = 0; k < pay; k++) toCenter(potOwn[potOwn.length - 1 - k]);
+      st.debt[T] -= pay;
+      msgs.push(pay > 1 ? 'החוב שולם — האסימונים חזרו למרכז' : 'החוב שולם — האסימון חזר למרכז');
+    }
   }
   // the board ends when one colour is fully pocketed; most points wins
   if (st.colors) {
     const done = [0, 1].filter(t => pocketedOf(st.coins, st.colors[t]).length === 9);
     if (done.length) {
-      if (st.queen && !st.queen.covered) { toCenter(0); st.queen = null; }
+      if (st.queen && !st.queen.covered) { queenHome(); st.queen = null; }
       const p0 = teamPoints(st, 0), p1 = teamPoints(st, 1);
       st.winner = p0 > p1 ? 0 : p1 > p0 ? 1 : done[0];
       st.final = [p0, p1];
@@ -514,7 +561,8 @@ function aiPlan(st, level) {
   const ownLeft = own ? onBoardOf(coins, own) : onBoardOf(coins, 'w').concat(onBoardOf(coins, 'b'));
   const qOn = !!coins[0];
   const pendingMine = st.queen && !st.queen.covered && st.queen.by === T;
-  const targets = pendingMine ? ownLeft : ownLeft.concat(qOn ? [0] : []);
+  // no-turns mode: the queen only once your own colour is all in (too early loses the game)
+  const targets = st.blitz ? (ownLeft.length ? ownLeft : (qOn ? [0] : [])) : pendingMine ? ownLeft : ownLeft.concat(qOn ? [0] : []);
   const cands = [];
   const spots = [-BASE_X, BASE_X];
   for (let k = 0; k <= 14; k++) spots.push(-LINE_MAX + k * (2 * LINE_MAX / 14));
@@ -548,7 +596,7 @@ function aiPlan(st, level) {
     let score = c.h * 2;
     for (const p of ev.pocketed) {
       const col = colorOf(p.i);
-      if (col === 's') score -= 30; else if (col === 'q') score += 7; else if (!own || col === own) score += 10; else score -= 8;
+      if (col === 's') score -= st.blitz ? 0 : 30; else if (col === 'q') score += st.blitz && ownLeft.length ? -60 : st.blitz ? 40 : 7; else if (!own || col === own) score += 10; else score -= 8;
     }
     tried.push({ lx: c.lx, shot, score });
   }
@@ -596,11 +644,11 @@ function updateHud() {
     const M = G.mission;
     $('team0').classList.add('on'); $('team1').classList.remove('on');
     $('t0name').textContent = 'משימה יומית'; $('t0sub').textContent = `צריך ${M.target} דיסקיות`; $('t0pts').textContent = String(M.got);
-    $('t1name').textContent = 'תורות שנשארו'; $('t1sub').textContent = `מתוך ${M.shots}`; $('t1pts').textContent = String(M.shots - M.used);
+    $('t1name').textContent = 'זריקות'; $('t1sub').textContent = 'כל הכנסה: +5 שניות'; $('t1pts').textContent = String(M.used);
     for (const T of [0, 1]) { const ch = $('t' + T + 'chip'); ch.className = 'chip n'; ch.style.background = ''; $('t' + T + 'q').hidden = true; }
     return;
   }
-  const st = G.st, active = (G.mode && st.winner === null) ? teamOf(st, curSeat(st)) : -1;
+  const st = G.st, active = (G.mode && G.mode !== 'blitz' && st.winner === null) ? teamOf(st, curSeat(st)) : -1, total = G.mode === 'blitz' ? 3 : 9;
   for (const T of [0, 1]) {
     $('team' + T).classList.toggle('on', active === T);
     $('t' + T + 'name').textContent = G.mode ? G.teamNames[T] : (T ? 'שחקן 2' : 'שחקן 1');
@@ -608,11 +656,13 @@ function updateHud() {
     const chip = $('t' + T + 'chip'), cs = c && coinSetById(W$.data.equip.coins)[c];
     chip.className = 'chip' + (c ? '' : ' n');
     chip.style.background = cs ? `radial-gradient(circle at 35% 35%, ${cs.g[0]}, ${cs.g[2]})` : '';
-    $('t' + T + 'pts').textContent = String(teamPoints(st, T));
+    const inCount = c ? (G.mode === 'blitz' ? blitzIn(st.coins, c) : pocketedOf(st.coins, c).length) : 0;
+    $('t' + T + 'pts').textContent = String(G.mode === 'blitz' ? inCount : teamPoints(st, T));
     const q = st.queen && st.queen.by === T, qd = $('t' + T + 'q');
     qd.hidden = !q; qd.classList.toggle('pending', !!(q && !st.queen.covered));
+    const debt = (st.debt && st.debt[T]) || 0;
     $('t' + T + 'sub').textContent = q && !st.queen.covered ? 'צריך לכסות את המלכה'
-      : c ? `${colorName(c)} · ${pocketedOf(st.coins, c).length}/9${q ? ' · מלכה' : ''}` : 'עוד בלי צבע';
+      : (c ? `${colorName(c)} · ${inCount}/${total}${q ? ' · מלכה' : ''}` : 'עוד בלי צבע') + (debt ? ` · חוב ${debt}` : '');
   }
 }
 function setCoach(main, sub) { $('coachMain').textContent = main || ''; $('coachSub').textContent = sub || ''; }
@@ -624,7 +674,7 @@ function beginTurn() {
   G.aiAnim = null; G.strikerTarget = null; G.simB = null;
   updateHud();
   if (st.winner !== null) {
-    G.phase = 'over'; G.showStriker = false;
+    G.phase = 'over'; G.showStriker = false; clockStop();
     settleBet();
     setCoach(`${G.teamNames[st.winner]} ניצחו`, '');
     setTimeout(() => { if (tok === G.token) showGameOver(); }, 900);
@@ -641,9 +691,10 @@ function beginTurn() {
 }
 function enterPhase(seat) {
   const ctrl = G.ctrl[seat], name = G.names[seat] || 'שחקן', tok = G.token;
+  if (G.mode !== 'mission') clockStart(TURN_MS, ctrl === 'human' ? (G.mode === 'local' ? name : 'התור שלך') : name, ctrl === 'human');
   if (ctrl === 'human') {
     G.phase = 'place';
-    setCoach(G.mode === 'local' ? `תור: ${name}` : G.mode === 'mission' ? `תור ${G.mission.used + 1} מתוך ${G.mission.shots}` : 'התור שלך',
+    setCoach(G.mode === 'local' ? `תור: ${name}` : G.mode === 'mission' ? `הכנס את כל ${G.mission.target} לפני שהזמן נגמר` : 'התור שלך',
       G.placeValid ? HOWTO : 'הסטרייקר נוגע באסימון — הזז אותו');
     if (G.mode === 'online') NET.pres({ aim: { n: G.st.shotNo, g: G.st.gid, x: Math.round(G.strikerX) } });
   } else if (ctrl === 'ai') {
@@ -662,6 +713,12 @@ function enterPhase(seat) {
   }
 }
 function fire(s, publish) {
+  if (G.mode === 'blitz') {
+    if (!G.blitz.ready[0]) return;
+    if (!blitzClear(0, G.strikerX, 19)) { toast('הסטרייקר נוגע בדיסקית — הזז אותו'); return; }
+    blitzShoot(0, s.vx, s.vy); return;
+  }
+  if (G.mode !== 'mission') clockStop();
   const st = G.st, seat = curSeat(st);
   let vx = +s.vx, vy = +s.vy; const sp = Math.sqrt(vx * vx + vy * vy); if (sp > VMAX) { vx *= VMAX / sp; vy *= VMAX / sp; }
   const shot = { x: round2(+s.x), y: round2(+s.y), vx: round2(vx), vy: round2(vy) };
@@ -708,6 +765,178 @@ function startLocalGame(mode, fmt, level, arena) {
   setTeamNames(); closeSheet(); beginTurn();
 }
 
+/* ---------------- stopwatch: 30 seconds a turn, and the daily mission's running clock ---------------- */
+const TURN_MS = 30000;
+const CLK = { on: false, left: 0, total: 1, who: '', owner: false };
+function clockStart(ms, who, owner) { Object.assign(CLK, { on: true, left: ms, total: ms, who, owner }); }
+function clockStop() { CLK.on = false; }
+function clockAdd(ms) { CLK.left += ms; CLK.total = Math.max(CLK.total, CLK.left); }
+function clockRuns() {
+  if (!CLK.on) return false;
+  if (G.mode === 'mission') return G.phase === 'place' || G.phase === 'sim' || G.phase === 'pause';
+  return G.phase === 'place' || G.phase === 'ai' || G.phase === 'remote';
+}
+function clockTick(dt) {
+  if (!clockRuns()) return;
+  CLK.left -= dt * 1000;
+  if (CLK.left <= 0) { CLK.left = 0; onClockOut(); }
+}
+function onClockOut() {
+  if (G.mode === 'mission') {
+    if (G.phase === 'place') missionEnd(false); else G.mission.timeUp = true;
+    CLK.on = false; return;
+  }
+  CLK.on = false;
+  // out of time: the turn passes — a shot with no force leaves every piece where it is
+  if (G.phase === 'place' && CLK.owner) {
+    toast('נגמר הזמן — התור עובר');
+    P = null; G.grabbing = false; G.trail = [];
+    const seat = curSeat(G.st), [x, y] = rotW(G.strikerX, BASE_Y, seat);
+    fire({ x, y, vx: 0, vy: 0 }, true);
+  }
+}
+let clkShown = '';
+function renderClock() {
+  const box = $('clock'), show = CLK.on && G.mode && G.phase !== 'over';
+  if (box.hidden !== !show) box.hidden = !show;
+  if (!show) return;
+  const left = Math.max(0, CLK.left), f = Math.min(1, left / CLK.total);
+  $('clockArc').style.strokeDashoffset = String(100.53 * (1 - f));
+  $('clockHand').style.transform = `rotate(${(1 - f) * 360}deg)`;
+  const s = (left / 1000).toFixed(1);
+  if (s !== clkShown) { $('clockNum').textContent = s; clkShown = s; }
+  if ($('clockWho').textContent !== CLK.who) $('clockWho').textContent = CLK.who;
+  box.classList.toggle('low', left < 10000 && left > 0);
+}
+
+/* ---------------- daily mission end ---------------- */
+function missionEnd(win) {
+  const M = G.mission; if (!M || G.phase === 'over') return;
+  G.phase = 'over'; G.showStriker = false; clockStop(); setCoach(win ? 'משימה הושלמה!' : 'נגמר הזמן', '');
+  W$.data.mission = { day: today(), got: M.got, done: true };
+  if (win) W$.data.boxes.push('gold');
+  saveWallet();
+  const tok = ++G.token;
+  setTimeout(() => { if (tok === G.token) showMissionResult(M, win); }, 700);
+}
+
+/* ---------------- no-turns mode (the user's own game): both shoot whenever they like ---------------- */
+// queen in the middle, 3 white and 3 black around her. Pocket your 3, then the queen to win.
+// Whoever pockets the queen before their 3 are in loses on the spot. No fouls.
+const BLITZ_AI_GAP = { easy: 3400, medium: 2300, hard: 1400 };
+const OPP_STRIKER = { g: ['#ffc2b8', '#d63a2e', '#7a0d0d'], rim: '#3a0000', style: 'classic' };
+const kindOf = i => i === 20 ? 's2' : i === 19 ? 's' : colorOf(i);
+const BLITZ_IDS = { w: [1, 2, 3], b: [10, 11, 12] };
+const blitzIn = (coins, col) => BLITZ_IDS[col].filter(i => !coins[i]).length; // how many of a colour's 3 are in
+function blitzCoins() {
+  const c = new Array(19).fill(null), d = 2 * R_C + .8, ids = [1, 10, 2, 11, 3, 12];
+  c[0] = [0, 0];
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + Math.PI / 6; c[ids[k]] = [round2(d * Math.cos(a)), round2(d * Math.sin(a))]; }
+  return c;
+}
+function blitzClear(seat, lx, skip) {
+  const [x, y] = rotW(lx, BASE_Y, seat);
+  for (const b of G.simB) {
+    if (b.out || b.i === skip) continue;
+    const dx = b.x - x, dy = b.y - y, rr = b.r + R_S;
+    if (dx * dx + dy * dy < rr * rr) return false;
+  }
+  return true;
+}
+function blitzFreeX(seat, want, skip) {
+  const w = legalX(clamp(want, -BASE_X, BASE_X));
+  if (blitzClear(seat, w, skip)) return w;
+  for (let d = 6; d <= 2 * LINE_MAX; d += 6) for (const x of [w + d, w - d]) if (Math.abs(x) <= LINE_MAX && blitzClear(seat, x, skip)) return x;
+  for (const x of [BASE_X, -BASE_X]) if (blitzClear(seat, x, skip)) return x;
+  return w;
+}
+function startBlitz(level) {
+  leaveOnline(); clockStop();
+  G.mode = 'blitz'; G.level = level || 'medium'; G.mission = null; G.bet = null;
+  G.st = newState('1v1'); G.st.colors = ['w', 'b']; G.st.coins = blitzCoins();
+  G.ctrl = ['human', 'ai', 'ai', 'ai']; G.names = ['אתה', '', 'המחשב', ''];
+  G.myTeam = 0; G.viewSeat = 0; G.viewAngle = 0; G.rot = null; G.fx = [];
+  G.settings = { mode: 'blitz', level: G.level };
+  const B = makeBodies(G.st.coins), [ox, oy] = rotW(0, BASE_Y, 2);
+  B.push({ i: 19, own: 0, x: 0, y: BASE_Y, vx: 0, vy: 0, r: R_S, m: M_S, out: false },
+         { i: 20, own: 1, x: ox, y: oy, vx: 0, vy: 0, r: R_S, m: M_S, out: false });
+  G.simB = B; G.simEv = { pocketed: [], hits: [], track: true }; G.evP = 0; G.evH = 0; G.simAcc = 0;
+  G.blitz = { ready: [true, true], back: [0, 0], aiAt: performance.now() + 1800, aiX: 0, done: [false, false], over: false, last: 0, reason: '' };
+  G.strikerX = 0; G.placeValid = true; G.phase = 'blitz'; G.showStriker = false; G.token++;
+  setTeamNames(); closeSheet(); updateHud();
+  setCoach('בלי תורות — יורים מתי שרוצים', 'קודם את 3 שלך, ורק אז את המלכה');
+}
+function blitzShoot(T, vx, vy) {
+  const Z = G.blitz, s = G.simB.find(b => b.i === (T ? 20 : 19));
+  s.vx = vx; s.vy = vy; Z.ready[T] = false; Z.back[T] = 0; Z.last = T;
+  clack(Math.min(Math.sqrt(vx * vx + vy * vy), 4000));
+}
+function blitzTick(dt, now) {
+  const Z = G.blitz, B = G.simB;
+  G.simAcc += dt; let n = 0;
+  while (G.simAcc >= DT && n < 80) { step(B, G.simEv); G.simAcc -= DT; n++; }
+  while (G.evP < G.simEv.pocketed.length) {
+    const p = G.simEv.pocketed[G.evP++];
+    G.fx.push({ kind: kindOf(p.i), x: p.x, y: p.y, p: p.p, t0: now }); plop();
+    if (p.i >= 19) continue; // a striker just comes back to its line — no fouls here
+    const body = B.find(b => b.i === p.i);
+    G.st.coins[p.i] = null;
+    if (p.i === 0) {
+      const who = body && body.lt !== undefined ? body.lt : Z.last;
+      const ready = blitzIn(G.st.coins, G.st.colors[who]) >= 3;
+      blitzEnd(ready ? who : 1 - who, ready ? 'queen' : 'early');
+      return;
+    }
+    const T = colorOf(p.i) === 'w' ? 0 : 1;
+    if (blitzIn(G.st.coins, G.st.colors[T]) >= 3 && !Z.done[T]) {
+      Z.done[T] = true;
+      toast(T === 0 ? 'כל השלושה שלך בפנים — עכשיו המלכה!' : 'המחשב סיים את שלו — עכשיו הוא הולך על המלכה!');
+    }
+    updateHud();
+  }
+  let mx = 0; while (G.evH < G.simEv.hits.length) mx = Math.max(mx, G.simEv.hits[G.evH++]);
+  if (mx) clack(mx);
+  if (G.simEv.hits.length > 4000) { G.simEv.hits.length = 0; G.evH = 0; }
+  // a striker that has stopped (or fell in) goes back to its own line
+  for (const [T, i, seat] of [[0, 19, 0], [1, 20, 2]]) {
+    if (Z.ready[T]) continue;
+    const s = B.find(b => b.i === i);
+    if (!(s.out || (s.vx === 0 && s.vy === 0))) { Z.back[T] = 0; continue; }
+    if (!Z.back[T]) Z.back[T] = now + 350;
+    if (now < Z.back[T]) continue;
+    s.out = true; // out of the way while we look for a free spot
+    const lx = blitzFreeX(seat, T ? Z.aiX : G.strikerX, i), [x, y] = rotW(lx, BASE_Y, seat);
+    Object.assign(s, { x, y, vx: 0, vy: 0, out: false });
+    if (T) Z.aiX = lx; else { G.strikerX = lx; G.placeValid = true; }
+    Z.ready[T] = true; Z.back[T] = 0;
+  }
+  if (Z.ready[1] && now >= Z.aiAt) blitzAI(now);
+}
+function blitzAI(now) {
+  const Z = G.blitz, coins = new Array(19).fill(null);
+  for (const b of G.simB) if (b.i < 19 && !b.out) coins[b.i] = [b.x, b.y];
+  const st = { fmt: '1v1', seats: [0, 2], turn: 1, coins, colors: ['w', 'b'], queen: null, blitz: true, debt: [0, 0] };
+  Z.aiAt = now + BLITZ_AI_GAP[G.level] * (.75 + Math.random() * .5);
+  const plan = aiPlan(st, G.level);
+  if (!plan || !blitzClear(2, plan.lx, 20)) return;
+  const s = G.simB.find(b => b.i === 20), [x, y] = rotW(plan.lx, BASE_Y, 2);
+  s.x = x; s.y = y; Z.aiX = plan.lx;
+  blitzShoot(1, plan.shot.vx, plan.shot.vy);
+}
+function blitzEnd(winner, reason) {
+  const Z = G.blitz; if (!Z || Z.over) return;
+  Z.over = true; Z.reason = reason;
+  G.st.winner = winner;
+  G.st.final = [0, 1].map(T => blitzIn(G.st.coins, G.st.colors[T]));
+  G.phase = 'over';
+  const msg = reason === 'queen'
+    ? (winner === 0 ? 'הכנסת את המלכה — ניצחת!' : 'המחשב הכניס את המלכה וניצח')
+    : (winner === 0 ? 'המחשב הכניס את המלכה מוקדם מדי — הפסד טכני שלו!' : 'המלכה נכנסה לפני ה-3 שלך — הפסד טכני');
+  toast(msg); setCoach(msg, ''); updateHud();
+  const tok = ++G.token;
+  setTimeout(() => { if (tok === G.token) showGameOver(); }, 1300);
+}
+
 /* ---------------- touch: slide to place, flick to shoot ---------------- */
 const cv = $('board'), ctx = cv.getContext('2d');
 let P = null;
@@ -716,9 +945,18 @@ function toLocal(e) {
   return { x: (e.clientX - r.left - r.width / 2) / scale, y: (e.clientY - r.top - r.height / 2) / scale };
 }
 function canInput() {
+  if (G.mode === 'blitz') return G.phase === 'blitz' && !!G.blitz && G.blitz.ready[0] && !paused();
   return G.phase === 'place' && !G.rot && !paused() && G.ctrl[curSeat(G.st)] === 'human' && curSeat(G.st) === G.viewSeat;
 }
 function setStrikerX(x) {
+  if (G.mode === 'blitz') {
+    G.strikerX = legalX(clamp(x, -BASE_X, BASE_X));
+    if (G.blitz && G.blitz.ready[0]) {
+      const s = G.simB.find(b => b.i === 19), [wx, wy] = rotW(G.strikerX, BASE_Y, 0);
+      s.x = wx; s.y = wy; G.placeValid = blitzClear(0, G.strikerX, 19);
+    }
+    return;
+  }
   const seat = curSeat(G.st);
   G.strikerX = legalX(clamp(x, -BASE_X, BASE_X));
   const ok = validPlace(G.strikerX, seat, G.st.coins);
@@ -795,7 +1033,7 @@ function thumbClientX() {
 }
 placer.addEventListener('pointerdown', e => {
   ensureAudio();
-  if (RP || !canInput()) return;
+  if (RP || !canPlace()) return;
   const tx = thumbClientX();
   RP = { id: e.pointerId, off: Math.abs(e.clientX - tx) < 30 ? tx - e.clientX : 0 };
   setStrikerX(railToX(e.clientX, RP.off));
@@ -804,22 +1042,23 @@ placer.addEventListener('pointerdown', e => {
 });
 placer.addEventListener('pointermove', e => {
   if (!RP || e.pointerId !== RP.id) return;
-  if (!canInput()) { RP = null; return; }
+  if (!canPlace()) { RP = null; return; }
   setStrikerX(railToX(e.clientX, RP.off));
 });
 const railEnd = e => { if (RP && e.pointerId === RP.id) RP = null; };
 placer.addEventListener('pointerup', railEnd);
 placer.addEventListener('pointercancel', railEnd);
 placer.addEventListener('keydown', e => {
-  if (!canInput()) return;
+  if (!canPlace()) return;
   const d = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
   if (d) { setStrikerX(G.strikerX + d * (e.shiftKey ? 30 : 6)); e.preventDefault(); }
 });
+const canPlace = () => canInput() || (G.mode === 'blitz' && G.phase === 'blitz' && !paused());
 function updateRail() {
-  const active = canInput() || (G.phase === 'place' && G.ctrl[curSeat(G.st)] === 'human');
+  const active = canPlace() || (G.phase === 'place' && G.ctrl[curSeat(G.st)] === 'human');
   const cls = (active ? '' : 'off') + (active && !G.placeValid ? ' bad' : '') + (RP ? ' drag' : '');
   if (cls !== railShown.cls) { placer.className = cls; railShown.cls = cls; }
-  const x = G.mode && G.showStriker ? G.strikerX : 0;
+  const x = G.mode && (G.showStriker || G.mode === 'blitz') ? G.strikerX : 0;
   if (x !== railShown.x) {
     railShown.x = x;
     const w = placer.clientWidth;
@@ -1190,6 +1429,7 @@ function makeSprites() {
   const set = coinSetById(W$.data.equip.coins), stk = strikerById(W$.data.equip.striker);
   for (const k of ['w', 'b', 'q']) sprites[k] = renderDisc(set[k], R_C, Math.max(8, Math.ceil((2 * R_C + 4) * scale * dpr)), null);
   sprites.s = renderDisc(stk, R_S, Math.max(8, Math.ceil((2 * R_S + 4) * scale * dpr)), stk.style);
+  sprites.s2 = renderDisc(OPP_STRIKER, R_S, Math.max(8, Math.ceil((2 * R_S + 4) * scale * dpr)), OPP_STRIKER.style);
   const th = document.querySelector('#placer .thumb');
   if (th) th.style.background = `url(${renderDisc(stk, R_S, 104, stk.style).toDataURL()}) center/100% 100% no-repeat`;
 }
@@ -1215,7 +1455,11 @@ function draw(now) {
     rrect(ctx, -BASE_X - 22, 320, 2 * BASE_X + 44, 43, 21.5); ctx.fill(); ctx.restore();
   }
   if (G.simB) {
-    for (const b of G.simB) if (!b.out) drawDisc(b.i === 19 ? 's' : colorOf(b.i), b.x, b.y, sh);
+    for (const b of G.simB) if (!b.out) drawDisc(kindOf(b.i), b.x, b.y, sh);
+    if (G.mode === 'blitz' && G.blitz && G.blitz.ready[0]) {
+      const s = G.simB.find(b => b.i === 19);
+      if (!G.placeValid || G.grabbing) { ctx.lineWidth = 4; ctx.strokeStyle = G.placeValid ? 'rgba(242,165,49,.9)' : 'rgba(212,70,47,.95)'; ctx.beginPath(); ctx.arc(s.x, s.y, R_S + 3, 0, 2 * Math.PI); ctx.stroke(); }
+    }
   } else {
     for (let i = 0; i < 19; i++) if (st.coins[i]) drawDisc(colorOf(i), st.coins[i][0], st.coins[i][1], sh);
   }
@@ -1248,7 +1492,7 @@ function processEvents(now) {
   const ev = G.simEv;
   while (G.evP < ev.pocketed.length) {
     const p = ev.pocketed[G.evP++];
-    G.fx.push({ kind: p.i === 19 ? 's' : colorOf(p.i), x: p.x, y: p.y, p: p.p, t0: now }); plop();
+    G.fx.push({ kind: kindOf(p.i), x: p.x, y: p.y, p: p.p, t0: now }); plop();
   }
   let mx = 0; while (G.evH < ev.hits.length) mx = Math.max(mx, ev.hits[G.evH++]);
   if (mx) clack(mx);
@@ -1263,6 +1507,8 @@ function frame(now) {
     if (p >= 1) { G.viewAngle = r.seat * Math.PI / 2; G.viewSeat = r.seat; G.rot = null; r.done(); }
   }
   if (!paused()) {
+    clockTick(dt);
+    if (G.phase === 'blitz' && G.simB) blitzTick(dt, now);
     if (G.phase === 'sim' && G.simB) {
       G.simAcc += dt; G.simT += dt; let n = 0;
       while (G.simAcc >= DT && n < 80) { step(G.simB, G.simEv); G.simAcc -= DT; n++; }
@@ -1283,6 +1529,7 @@ function frame(now) {
   if (G.fx.length) G.fx = G.fx.filter(f => now - f.t0 < 300);
   draw(now);
   updateRail();
+  renderClock();
   requestAnimationFrame(frame);
 }
 
@@ -1453,10 +1700,11 @@ async function installApp() {
 
 /* ---------------- wallet + player account (username and secret code, like Cheetah) ---------------- */
 const START_COINS = 300, DAILY_BONUS = 150;
+const WALLET_VER = 2; // raising this resets every player's coins, skins, boxes and daily progress
 const ONLINE_TABLE = { fee: 100, prize: 200, box: 'blue' };
 const FREE_ITEMS = ['classic', 'c-classic', 's-classic'];
 function cleanWallet(d) {
-  const o = d && typeof d === 'object' ? d : {};
+  const o = d && typeof d === 'object' && d.ver === WALLET_VER ? d : {};
   const known = new Set([...SKINS, ...COIN_SETS, ...STRIKERS].map(s => s.id));
   const coins = Number.isFinite(o.coins) ? Math.max(0, Math.floor(o.coins)) : START_COINS;
   const owned = Array.isArray(o.owned) ? o.owned.filter((id, i, a) => known.has(id) && a.indexOf(id) === i) : [];
@@ -1464,7 +1712,7 @@ function cleanWallet(d) {
   const e = o.equip && typeof o.equip === 'object' ? o.equip : {};
   const pick = (v, fb) => owned.includes(v) ? v : fb;
   return {
-    coins, owned,
+    ver: WALLET_VER, coins, owned,
     equip: { board: pick(e.board, pick(o.skin, 'classic')), coins: pick(e.coins, 'c-classic'), striker: pick(e.striker, 's-classic') },
     wins: Number.isFinite(o.wins) ? Math.max(0, Math.floor(o.wins)) : 0, games: Number.isFinite(o.games) ? Math.max(0, Math.floor(o.games)) : 0,
     daily: typeof o.daily === 'string' ? o.daily : null,
@@ -1484,7 +1732,7 @@ ACC.ready = (async () => {
 })();
 function walletBody() {
   const d = W$.data;
-  return { coins: d.coins, owned: d.owned.slice(), equip: Object.assign({}, d.equip), wins: d.wins, games: d.games,
+  return { ver: WALLET_VER, coins: d.coins, owned: d.owned.slice(), equip: Object.assign({}, d.equip), wins: d.wins, games: d.games,
     daily: d.daily, mission: d.mission ? Object.assign({}, d.mission) : null, boxes: d.boxes.slice(), t: Date.now() };
 }
 function saveWallet() {
@@ -1518,6 +1766,7 @@ function attachAccount(key, d, hash) {
   const prevEquip = JSON.stringify(W$.data.equip);
   W$.data = cleanWallet(d); store.set('wallet', W$.data);
   store.set('acct', { key, name: ACC.name, hash });
+  if (d.ver !== WALLET_VER) saveWallet(); // an account from before the reset starts over
   if (JSON.stringify(W$.data.equip) !== prevEquip) applySkin();
   ACC.unsub = ACC.ref.onSnapshot(snap => {
     if (!snap.exists || ACC.key !== key) return;
@@ -1790,7 +2039,7 @@ function showDailyBonus() {
     btn('המשך', '', showHome, 'primary'));
 }
 // daily mission: only three coins on the board, five shots to pocket all three; do it and a gold box waits in the lobby
-const MISSION = { shots: 5, target: 3 };
+const MISSION = { secs: 15, bonus: 5, target: 3 };
 const missionDone = () => !!(W$.data.mission && W$.data.mission.day === today());
 function missionLayout() {
   const d = new Date(), rnd = rng(d.getFullYear() * 1000 + d.getMonth() * 40 + d.getDate()), pts = [];
@@ -1811,9 +2060,10 @@ function startMission() {
   missionLayout().forEach((p, n) => { G.st.coins[[1, 10, 2][n]] = p; });
   G.ctrl = ['human', 'ai', 'ai', 'ai']; G.names = ['אתה', '', '', ''];
   G.myTeam = 0; G.viewSeat = 0; G.viewAngle = 0; G.rot = null; G.fx = []; G.bet = null;
-  G.mission = { shots: MISSION.shots, target: MISSION.target, used: 0, got: 0 };
+  G.mission = { target: MISSION.target, used: 0, got: 0, timeUp: false };
   W$.data.mission = { day: today(), got: 0, done: false }; saveWallet(); // the day's try starts now
   G.settings = { mode: 'mission' };
+  clockStart(MISSION.secs * 1000, 'משימה יומית', true);
   setTeamNames(); closeSheet(); beginTurn();
 }
 function missionSettle() {
@@ -1827,21 +2077,18 @@ function missionSettle() {
   else got = inThisShot.length;
   st.shotNo++;
   M.used++; M.got += got;
+  if (got) clockAdd(got * MISSION.bonus * 1000); // every coin in buys 5 more seconds
   G.st = st; G.simB = null; G.phase = 'pause';
-  toast(foul ? (inThisShot.length ? 'פאול! הדיסקית חוזרת למרכז' : 'הסטרייקר נפל לכיס') : got ? (got > 1 ? `נכנסו ${got}!` : 'נכנס!') : 'לא נכנס');
+  toast(foul ? (inThisShot.length ? 'פאול! הדיסקית חוזרת למרכז' : 'הסטרייקר נפל לכיס') : got ? `נכנס! +${got * MISSION.bonus} שניות` : 'לא נכנס');
   updateHud();
+  if (M.got >= M.target) { missionEnd(true); return; }
+  if (M.timeUp || CLK.left <= 0) { missionEnd(false); return; }
   const tok = ++G.token;
-  if (M.used >= M.shots || M.got >= M.target) {
-    G.phase = 'over'; G.showStriker = false; setCoach('המשימה הסתיימה', '');
-    const win = M.got >= M.target;
-    W$.data.mission = { day: today(), got: M.got, done: true };
-    if (win) W$.data.boxes.push('gold');
-    saveWallet();
-    setTimeout(() => { if (tok === G.token) showMissionResult(M, win); }, 700);
-  } else setTimeout(() => { if (tok === G.token) beginTurn(); }, 450);
+  setTimeout(() => { if (tok === G.token) beginTurn(); }, 300);
 }
 function backToLobby() {
-  if (G.mode !== 'online') { G.mode = null; G.mission = null; G.phase = 'idle'; G.showStriker = false; G.token++; G.simB = null; updateHud(); setCoach('', ''); }
+  clockStop();
+  if (G.mode !== 'online') { G.mode = null; G.mission = null; G.blitz = null; G.phase = 'idle'; G.showStriker = false; G.token++; G.simB = null; updateHud(); setCoach('', ''); }
   showHome();
 }
 
@@ -2087,9 +2334,10 @@ function showHome() {
   const modes = el('div', { class: 'modes' },
     inGame ? mode('המשך משחק', 'חזרה ללוח', ['#f2a531', '#b06508'], closeSheet) : null,
     mode('משחק חופשי', 'נגד המחשב, בלי מטבעות', ['#3fae5c', '#1d6b33'], showFree),
-    mode('משימה יומית', md ? 'בוצעה היום ✓' : `${m.target} דיסקיות ב-${m.shots} תורות`, ['#ef7d3c', '#a7401a'], showMission),
+    mode('משימה יומית', md ? 'בוצעה היום ✓' : `${m.target} דיסקיות ב-${m.secs} שניות`, ['#ef7d3c', '#a7401a'], showMission),
     mode('אונליין', 'עם חברים · קוד חדר', ['#3d8ae6', '#1a4b9a'], showOnline),
-    mode('טלפון אחד', '2 או 4 שחקנים', ['#20a7a0', '#0e625e'], showLocal));
+    mode('טלפון אחד', '2 או 4 שחקנים', ['#20a7a0', '#0e625e'], showLocal),
+    mode('קארום בזק', 'בלי תורות · נגד המחשב', ['#d6457a', '#7d1740'], showBlitz));
   openSheet('home', top, arenas, modes);
   // show the richest table you can afford
   if (first) requestAnimationFrame(() => { try { first.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {} });
@@ -2112,8 +2360,8 @@ function showMission() {
   openSheet('missionInfo',
     el('div', { class: 'col' },
       el('h2', { text: 'משימה יומית' }),
-      el('p', { class: 'lead', text: `על הלוח יש רק ${MISSION.target} דיסקיות, מפוזרות. יש לך ${MISSION.shots} תורות להכניס את כולן. הצלחת — תיבת זהב מחכה לך בלובי.` }),
-      el('p', { class: 'note', text: 'סטרייקר שנופל לכיס מבזבז תור, ומה שנכנס איתו חוזר למרכז. יש ניסיון אחד ביום.' }),
+      el('p', { class: 'lead', text: `על הלוח יש רק ${MISSION.target} דיסקיות, מפוזרות. יש לך ${MISSION.secs} שניות להכניס את כולן, וכל דיסקית שנכנסת מוסיפה ${MISSION.bonus} שניות. הצלחת — תיבת זהב מחכה לך בלובי.` }),
+      el('p', { class: 'note', text: 'השעון רץ כל הזמן, גם כשהדיסקיות מתגלגלות. סטרייקר שנופל לכיס מחזיר את מה שנכנס איתו. יש ניסיון אחד ביום.' }),
       md ? el('p', { class: 'bet win', text: W$.data.mission.got >= MISSION.target ? 'כבר הצלחת היום! חוזרים מחר למשימה חדשה.' : `כבר ניסית היום (הכנסת ${W$.data.mission.got}). חוזרים מחר.` })
         : btn('התחל משימה', '', startMission, 'primary')),
     el('div', { class: 'col center' }, chestCanvas('gold', 150), el('div', { class: 'boxname', text: 'פרס: תיבת זהב' })));
@@ -2122,7 +2370,7 @@ function showMission() {
 function showMissionResult(M, win) {
   const info = el('div', { class: 'col' },
     el('div', { class: 'big', text: win ? 'משימה הושלמה!' : 'לא הפעם' }),
-    el('p', { class: 'lead', style: 'text-align:center', text: win ? `הכנסת את כל ${M.target} הדיסקיות ב-${M.used} תורות.` : `הכנסת ${M.got} מתוך ${M.target}. צריך את כולן כדי לקבל את התיבה.` }),
+    el('p', { class: 'lead', style: 'text-align:center', text: win ? `הכנסת את כל ${M.target} הדיסקיות ב-${M.used} זריקות.` : `נגמר הזמן: הכנסת ${M.got} מתוך ${M.target}. צריך את כולן כדי לקבל את התיבה.` }),
     win ? el('p', { class: 'bet win', text: 'תיבת הזהב מחכה לך בלובי' }) : el('p', { class: 'note', style: 'text-align:center', text: 'מחר יש משימה חדשה.' }),
     btn(win ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'primary'));
   openSheet('mission', info, win ? el('div', { class: 'col center' }, chestCanvas('gold', 170)) : null);
@@ -2196,7 +2444,10 @@ function showRules() {
       li(el('b', { text: 'הצבע שלך: ' }), 'לא בוחרים מראש. מי שמכניס ראשון אסימון — הצבע של האסימון הזה הוא הצבע שלו עד סוף המשחק.'),
       li('נכנס אסימון שלך? נקודה ועוד תור. אסימון של היריב נספר ליריב.'),
       li(el('b', { text: 'המלכה האדומה: ' }), 'מותר להכניס אותה בכל רגע. מי שמכניס אותה חייב באותו תור להכניס גם אסימון בצבע שלו (באותה מכה או במכה הבאה). הצליח — +3 נקודות. לא הצליח — המלכה חוזרת למרכז ואין נקודות.'),
-      li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר. אם באותה מכה נכנס גם אסימון שלך, חוזר רק הוא, ואם הוא כיסה את המלכה — 3 הנקודות נשארות.'),
+      li(el('b', { text: 'פאול: ' }), 'סטרייקר שנופל לכיס — אסימון אחד שלך חוזר למרכז והתור עובר. אם באותה מכה נכנס גם אסימון שלך, חוזר רק הוא, ואם הוא כיסה את המלכה — 3 הנקודות נשארות. עוד אין לך אסימון להחזיר? מינוס נקודה, והאסימון הבא שתכניס חוזר למשחק.'),
+      li(el('b', { text: 'המלכה במרכז: ' }), 'כשהמלכה חוזרת היא תמיד במרכז, ודיסקית שעמדה שם זזה לידה.'),
+      li(el('b', { text: 'שעון: ' }), 'לכל תור 30 שניות. נגמר הזמן — התור עובר.'),
+      li(el('b', { text: 'קארום בזק: ' }), 'בלי תורות — יורים מתי שרוצים. 3 לבנים, 3 שחורים והמלכה. מכניסים את 3 שלך ואז את המלכה. מי שמכניס את המלכה לפני כן — הפסד טכני. אין פאולים.'),
       li(el('b', { text: 'סוף המשחק: ' }), 'כשאחד הצבעים נכנס כולו. מנצח מי שיש לו יותר נקודות (אסימונים + 3 למלכה). בתיקו — מי שסיים את הצבע שלו.'),
       li(el('b', { text: 'שולחנות: ' }), 'בלובי בוחרים שולחן. משלמים כניסה, ומי שמנצח לוקח את הפרס ותיבה. ככל שהשולחן יקר יותר, המחשב חזק יותר.'),
       li(el('b', { text: 'תיבות: ' }), 'ירוקה, כחולה, סגולה וזהב — מהחלשה לטובה. תיבה שזכית בה מחכה לך בלובי, ושם פותחים אותה. בפנים יש מטבעות, ולפעמים — נדיר — לוח, סט דיסקיות או סטרייקר.'),
@@ -2327,13 +2578,28 @@ function showAccount() {
   kids.push(out, btn('חזרה', '', showHome, 'quiet'));
   openSheet('account', ...kids);
 }
+function showBlitz() {
+  let level = store.get('blitzLevel', 'medium');
+  openSheet('blitz',
+    el('h2', { text: 'קארום בזק' }),
+    el('p', { class: 'lead', text: 'בלי תורות: אתה והמחשב יורים מתי שרוצים, באותו זמן. באמצע המלכה, ומסביב 3 לבנים (שלך) ו-3 שחורים.' }),
+    el('ul', { class: 'rules' },
+      el('li', { text: 'מכניסים את 3 הלבנים, ורק אז את המלכה — ומנצחים.' }),
+      el('li', { text: 'מי שמכניס את המלכה לפני שגמר את שלו — הפסד טכני.' }),
+      el('li', { text: 'אין פאולים: סטרייקר שנופל פשוט חוזר לקו שלך.' })),
+    el('p', { class: 'label', text: 'רמת המחשב' }),
+    seg('blvl', [['easy', 'קל'], ['medium', 'בינוני'], ['hard', 'קשה']], level, v => { level = v; store.set('blitzLevel', v); }),
+    btn('התחל', '', () => startBlitz(level), 'primary'));
+}
 function showMessage(title, text) { openSheet('msg', el('h2', { text: title }), el('p', { class: 'lead', text }), btn('לתפריט', '', showHome, 'primary')); }
 function showGameOver() {
   const st = G.st, W = st.winner;
   let title;
   if (G.mode === 'local') title = `${G.teamNames[W]} ניצחו!`;
   else if (W === G.myTeam) title = st.fmt === '2v2' ? 'ניצחתם!' : 'ניצחת!';
-  else title = G.mode === 'ai' ? 'המחשב ניצח' : 'הפסדת';
+  else title = G.mode === 'ai' || G.mode === 'blitz' ? 'המחשב ניצח' : 'הפסדת';
+  const why = G.mode === 'blitz' && G.blitz && G.blitz.reason === 'early'
+    ? el('p', { class: 'bet lose', text: W === G.myTeam ? 'הפסד טכני למחשב — הוא הכניס את המלכה מוקדם מדי' : 'הפסד טכני — המלכה נכנסה לפני שלושת שלך' }) : null;
   const f = st.final || [teamPoints(st, 0), teamPoints(st, 1)];
   const scoreRow = el('div', { class: 'result' },
     el('span', null, String(f[0]), el('small', { text: G.teamNames[0] })),
@@ -2346,7 +2612,8 @@ function showGameOver() {
     if (G.mode === 'online') {
       if (!NET.isHost) return;
       G.st = newState(NET.fmt); placeBet(ONLINE_TABLE); NET.pres({ game: G.st, shot: null }); closeSheet(); beginTurn();
-    } else if (G.settings) startLocalGame(G.settings.mode, G.settings.fmt, G.settings.level, arena);
+    } else if (G.settings && G.settings.mode === 'blitz') startBlitz(G.settings.level);
+    else if (G.settings) startLocalGame(G.settings.mode, G.settings.fmt, G.settings.level, arena);
   };
   let againBtn;
   if (G.mode === 'online' && !NET.isHost) againBtn = el('p', { class: 'note', text: 'המארח יכול להתחיל משחק חוזר.' });
@@ -2354,7 +2621,7 @@ function showGameOver() {
     againBtn = btn(arena ? `שוב ב${arena.name} · ${fmtN(arena.fee)}` : 'משחק חוזר', '', again, 'primary');
     if (arena && W$.data.coins < arena.fee) againBtn.disabled = true;
   }
-  const info = [el('div', { class: 'big', text: title }), scoreRow, betLine, b ? walletPill() : null, againBtn, btn(b && b.won && b.box ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'quiet')];
+  const info = [el('div', { class: 'big', text: title }), scoreRow, why, betLine, b ? walletPill() : null, againBtn, btn(b && b.won && b.box ? 'ללובי — לפתוח את התיבה' : 'ללובי', '', backToLobby, 'quiet')];
   if (b && b.won && b.box) {
     // won a box: result on one side, the box to open on the other
     openSheet('over', el('div', { class: 'col' }, info.filter(Boolean)),
