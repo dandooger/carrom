@@ -42,6 +42,19 @@ img{{max-width:100%}}
 """
 io.open("index.html", "w", encoding="utf-8", newline="\n").write(page)
 
+# the upright-phone version: same game, its own address, install name and orientation
+import json, os
+os.makedirs("portrait", exist_ok=True)
+portrait = page.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<base href="../">', 1)
+portrait = portrait.replace('<link rel="manifest" href="manifest.webmanifest">', '<link rel="manifest" href="portrait/manifest.webmanifest">', 1)
+portrait = portrait.replace(f'<script>window.CARROM_VERSION = "{VERSION}";</script>', f'<script>window.CARROM_VERSION = "{VERSION}"; window.CARROM_PORTRAIT = true;</script>', 1)
+io.open("portrait/index.html", "w", encoding="utf-8", newline="\n").write(portrait)
+m = json.load(io.open("manifest.webmanifest", encoding="utf-8"))
+m.update({"name": "Carrom Israel (לאורך)", "short_name": "Carrom לאורך", "orientation": "portrait"})
+m["display_override"] = ["standalone", "fullscreen"]
+m["icons"] = [dict(i, src="../" + i["src"]) for i in m["icons"]]
+io.open("portrait/manifest.webmanifest", "w", encoding="utf-8", newline="\n").write(json.dumps(m, ensure_ascii=False, indent=2) + "\n")
+
 sw = io.open("sw.template.js", encoding="utf-8").read().replace("__VERSION__", VERSION)
 io.open("sw.js", "w", encoding="utf-8", newline="\n").write(sw)
 print("built version", VERSION)

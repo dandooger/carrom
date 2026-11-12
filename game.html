@@ -25,10 +25,22 @@ body{margin:0;background-color:var(--night);color:var(--ivory);font-family:var(-
 .side-a .iconbtn{margin-top:auto;width:52px;height:52px;align-self:flex-start}
 .side-b #placer{margin-top:auto}
 @media (orientation:portrait){
-  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;max-width:760px;margin:0 auto}
-  .side-a{flex-direction:row;align-items:stretch}
-  .side-a .team{flex:1}
-  .side-a .iconbtn{margin-top:0;height:auto}
+  #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;max-width:760px;margin:0 auto;padding-block:6px}
+  .side-a{flex-direction:row;align-items:stretch;gap:6px}
+  .side-a .team{flex:1;padding:6px 8px;gap:6px}
+  .side-a .iconbtn{margin-top:0;height:auto;width:44px}
+  .side-b{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
+  .side-b #coach{flex-basis:100%;min-height:0;padding:6px 10px}
+  .side-b #placer{flex:1 1 170px;margin-top:0}
+  #clock{padding:4px 10px;gap:8px}
+  #clock svg{width:34px;height:38px}
+  #clock b{font-size:22px}
+}
+@media (orientation:portrait) and (max-height:760px){
+  .side-b #coach{display:none}
+  .tname{font-size:13px}
+  .tsub{font-size:11px}
+  .tcount{font-size:19px}
 }
 .team{flex:none;min-width:0;display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:14px;background:var(--indigo);
   border:1.5px solid transparent;transition:border-color .25s,background .25s}
@@ -248,7 +260,7 @@ input[type=password],input[type=text]{font:inherit;font-size:17px;padding:12px 1
 #rotate .ph::after{content:"";position:absolute;left:50%;bottom:6px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--ivory)}
 #rotate small{font-weight:600;font-size:14px;color:var(--ivory-dim);max-width:280px}
 @keyframes turn{0%,25%{transform:rotate(0)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
-@media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
+@media (orientation:portrait) and (pointer:coarse){html:not(.portrait) #rotate{display:flex}}
 .mid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;min-height:0}
 .cabinet{font:inherit;color:var(--ivory);cursor:pointer;width:116px;border:0;border-radius:16px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;
   background:linear-gradient(160deg,#8a4c26,#4a2412);box-shadow:inset 0 0 0 3px #2e1608,inset 0 0 0 5px rgba(242,165,49,.35),0 10px 24px rgba(0,0,0,.35)}
@@ -1661,6 +1673,9 @@ function frame(now) {
 
 /* ---------------- connection: inside claude.ai use its room/db; as the app use a free MQTT message server (like Cheetah) ---------------- */
 const IN_CLAUDE = !!(window.claude && typeof window.claude.use === 'function');
+// the upright-phone version (portrait/index.html) sets this before the game loads
+const PORTRAIT_BUILD = !!window.CARROM_PORTRAIT;
+if (PORTRAIT_BUILD) document.documentElement.classList.add('portrait');
 const APP_URL = 'https://dandooger.github.io/carrom/';
 const MQ_ROOT = 'carrom-dg/v1/';
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081'];
@@ -1805,7 +1820,7 @@ if (!IN_CLAUDE && 'serviceWorker' in navigator && location.protocol === 'https:'
 }
 // the installed app stays in landscape, like the game is meant to be held
 addEventListener('pointerdown', () => {
-  try { if (INSTALL.installed && screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {}
+  try { if (INSTALL.installed && screen.orientation && screen.orientation.lock) screen.orientation.lock(PORTRAIT_BUILD ? 'portrait' : 'landscape').catch(() => {}); } catch (e) {}
 }, { once: true });
 async function installApp() {
   if (INSTALL.deferred) {

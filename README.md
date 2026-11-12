@@ -9,3 +9,4 @@
 אונליין וחשבונות עוברים דרך שרת הודעות חינמי (MQTT), כמו בצ'יטה.
 
 - `old/` — הגרסה הקודמת (העפה באצבע, בלי חץ), קבועה: https://dandooger.github.io/carrom/old/
+- `portrait/` — גרסה לטלפון שמחזיקים לאורך, נבנית אוטומטית מאותו קוד: https://dandooger.github.io/carrom/portrait/
